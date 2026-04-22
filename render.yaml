@@ -1,0 +1,30 @@
+# Render Blueprint — single web service that serves both the Vite-built
+# frontend and the Express API. Deploy in one click from a GitHub repo.
+#
+# After connecting the repo in the Render dashboard:
+#   1. Render detects this file and creates the service.
+#   2. You set GEMINI_API_KEY in the environment tab (required).
+#   3. NCBI_API_KEY / NCBI_CONTACT_EMAIL are optional but give you 10x
+#      higher PubMed rate limits. See README.md.
+
+services:
+  - type: web
+    name: labos
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: NCBI_API_KEY
+        sync: false
+      - key: NCBI_CONTACT_EMAIL
+        sync: false
+      - key: GEMINI_MODEL_FAST
+        sync: false
+      - key: GEMINI_MODEL_THOUGHTFUL
+        sync: false
+    healthCheckPath: /api/health
