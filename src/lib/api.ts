@@ -82,11 +82,26 @@ export interface NotebookSummary {
 }
 
 export interface LabProfile {
+  /** Lab name (what shows in the sidebar header). */
   name: string;
   focus: string;
   techniques: string[];
   digest: string;
   createdAt?: string;
+
+  // ---- User (researcher) info, all optional ----
+  /** Full name of the person using LabOS. */
+  user?: string;
+  /** Email address. */
+  email?: string;
+  /** Role within the lab: student, postdoc, PI, tech, etc. */
+  role?: string;
+  /** Institution / university. */
+  institution?: string;
+  /** Principal investigator (if different from `user`). */
+  pi?: string;
+  /** Appearance preference. */
+  theme?: 'light' | 'dark' | 'system';
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

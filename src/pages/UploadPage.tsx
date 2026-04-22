@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
-import { UploadCloud, File, X } from 'lucide-react';
+import { UploadCloud, File, X, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { useLab } from '@/src/lib/context';
 import { api } from '@/src/lib/api';
 import { VoiceButton } from '@/src/components/VoiceButton';
+import { EXPERIMENT_TEMPLATES, type ExperimentTemplate } from '@/src/lib/experimentTemplates';
+import { cn } from '@/src/lib/utils';
 
 export function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -21,8 +23,22 @@ export function UploadPage() {
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  const [templateId, setTemplateId] = useState<string>('blank');
   const navigate = useNavigate();
   const { profile, addExperiment } = useLab();
+
+  const applyTemplate = (tpl: ExperimentTemplate) => {
+    setTemplateId(tpl.id);
+    setMetadata((m) => ({
+      ...m,
+      type: tpl.metadata.type || m.type,
+      model: tpl.metadata.model ?? m.model,
+      conditions: tpl.metadata.conditions ?? m.conditions,
+      timepoints: tpl.metadata.timepoints ?? m.timepoints,
+      // Only seed notes if the user hasn't already written some.
+      notes: m.notes && m.notes.trim().length > 0 ? m.notes : tpl.protocol,
+    }));
+  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -92,12 +108,48 @@ export function UploadPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Upload experiment data</h1>
-        <p className="text-slate-500">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Upload experiment data</h1>
+        <p className="text-slate-500 dark:text-slate-400">
           Upload a CSV and describe what it is. The AI will produce a narrative, a chart, QC notes,
           and suggested next experiments.
         </p>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <CardTitle className="text-base">Start from a template</CardTitle>
+          </div>
+          <CardDescription>
+            Pre-fills metadata and drops a protocol checklist into notes. Pick "Blank" to start from scratch.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {EXPERIMENT_TEMPLATES.map((tpl) => {
+              const active = templateId === tpl.id;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => applyTemplate(tpl)}
+                  title={tpl.blurb}
+                  className={cn(
+                    'text-left p-3 rounded-md border text-sm transition-colors',
+                    active
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 dark:border-indigo-400 text-indigo-900 dark:text-indigo-100'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600',
+                  )}
+                >
+                  <div className="font-medium">{tpl.name}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{tpl.blurb}</div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-1">

@@ -7,10 +7,13 @@ import {
 } from 'recharts';
 import {
   AlertCircle, CheckCircle2, ArrowRight, MessageSquare, Lightbulb, Send, Loader2,
+  Download, FileText, Trash2,
 } from 'lucide-react';
 import { useLab } from '@/src/lib/context';
 import { api } from '@/src/lib/api';
 import { VoiceButton } from '@/src/components/VoiceButton';
+import { exportExperimentJson, exportExperimentPdf } from '@/src/lib/exportExperiment';
+import { useNavigate } from 'react-router-dom';
 
 const FALLBACK_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7'];
 
@@ -18,12 +21,14 @@ type ChatMsg = { role: 'user' | 'assistant'; content: string };
 
 export function ExperimentDetail() {
   const { id } = useParams<{ id: string }>();
-  const { experiments, profile, papers } = useLab();
+  const navigate = useNavigate();
+  const { experiments, profile, papers, observations, removeExperiment } = useLab();
   const experiment = experiments.find((e) => e.id === id);
 
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [asking, setAsking] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (!experiment) {
     return (
@@ -127,28 +132,82 @@ export function ExperimentDetail() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 truncate">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
               {experiment.id}: {experiment.name}
             </h1>
             <span
               className={`px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
                 experiment.status === 'Analyzed'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-amber-100 text-amber-700'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
               }`}
             >
               <CheckCircle2 className="w-3 h-3" />
               {experiment.status}
             </span>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {[experiment.type, experiment.model, experiment.date, experiment.researcher]
               .filter(Boolean)
               .join(' • ')}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              const related = observations.filter((o) => o.experimentId === experiment.id);
+              exportExperimentPdf(experiment, related, { labName: profile?.name, user: profile?.user });
+            }}
+            title="Open a print view to save as PDF"
+          >
+            <FileText className="w-4 h-4" />
+            PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              const related = observations.filter((o) => o.experimentId === experiment.id);
+              exportExperimentJson(experiment, related);
+            }}
+          >
+            <Download className="w-4 h-4" />
+            JSON
+          </Button>
+          {!confirmingDelete ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-red-600 gap-1.5"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={async () => {
+                  await removeExperiment(experiment.id);
+                  navigate('/experiments');
+                }}
+              >
+                Confirm delete
+              </Button>
+            </>
+          )}
         </div>
       </div>
 

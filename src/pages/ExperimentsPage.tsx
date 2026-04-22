@@ -26,8 +26,8 @@ export function ExperimentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Experiments</h1>
-          <p className="text-slate-500">Browse all experiments uploaded to {profile?.name || 'the lab'}.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Experiments</h1>
+          <p className="text-slate-500 dark:text-slate-400">Browse all experiments uploaded to {profile?.name || 'the lab'}.</p>
         </div>
         <Button
           onClick={() => navigate('/upload')}
@@ -46,7 +46,7 @@ export function ExperimentsPage() {
               <input
                 type="text"
                 placeholder="Search experiments by name, ID, model, or researcher…"
-                className="w-full h-10 pl-9 pr-4 rounded-md border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-10 pl-9 pr-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -55,7 +55,7 @@ export function ExperimentsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <div className="p-8 text-center text-slate-500">
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
               <Beaker className="w-12 h-12 mx-auto text-slate-300 mb-4" />
               <p>{searchQuery ? 'No experiments match your search.' : 'No experiments logged yet.'}</p>
               {!searchQuery && (
@@ -69,26 +69,26 @@ export function ExperimentsPage() {
               {filtered.map((exp) => (
                 <div
                   key={exp.id}
-                  className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+                  className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                   onClick={() => navigate(`/experiments/${exp.id}`)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                      <Beaker className="w-5 h-5 text-slate-500 group-hover:text-indigo-600 transition-colors" />
+                      <Beaker className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 transition-colors" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-slate-500">{exp.id}</span>
-                        <h3 className="font-medium text-slate-900">{exp.name}</h3>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{exp.id}</span>
+                        <h3 className="font-medium text-slate-900 dark:text-slate-100">{exp.name}</h3>
                       </div>
-                      <p className="text-sm text-slate-500 mt-1">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         {[exp.type, exp.model, exp.date].filter(Boolean).join(' • ')}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      {exp.researcher && <p className="text-sm font-medium text-slate-900">{exp.researcher}</p>}
+                      {exp.researcher && <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{exp.researcher}</p>}
                       <span
                         className={cn(
                           'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1',

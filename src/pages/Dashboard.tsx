@@ -15,29 +15,29 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-        <p className="text-slate-500">Overview of recent activity and AI insights for {profile?.name}.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400">Overview of recent activity and AI insights for {profile?.name}.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Experiments</CardTitle>
-            <Activity className="h-4 w-4 text-slate-500" />
+            <Activity className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{experiments.length}</div>
-            <p className="text-xs text-slate-500">Across all uploads</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Across all uploads</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Hypotheses</CardTitle>
-            <Lightbulb className="h-4 w-4 text-slate-500" />
+            <Lightbulb className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{hypotheses.length}</div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {supported} supported · {testing} testing
             </p>
           </CardContent>
@@ -49,17 +49,17 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{flagged.length}</div>
-            <p className="text-xs text-slate-500">Require review</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Require review</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Library papers</CardTitle>
-            <FileText className="h-4 w-4 text-slate-500" />
+            <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{papers.length}</div>
-            <p className="text-xs text-slate-500">Saved from PubMed</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Saved from PubMed</p>
           </CardContent>
         </Card>
       </div>
@@ -72,7 +72,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             {experiments.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Nothing uploaded yet —{' '}
                 <Link className="text-indigo-600 hover:underline" to="/upload">
                   run your first analysis
@@ -89,7 +89,7 @@ export function Dashboard() {
                   >
                     <div className="ml-2 space-y-1 min-w-0">
                       <p className="text-sm font-medium leading-none truncate">{item.name}</p>
-                      <p className="text-sm text-slate-500 truncate">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                         {item.type}
                         {item.date ? ` • ${item.date}` : ''}
                       </p>
@@ -130,9 +130,9 @@ export function Dashboard() {
                   <strong>Recent notes:</strong> {profile.digest}
                 </p>
               )}
-              <div className="bg-indigo-50 p-3 rounded-md border border-indigo-100">
-                <p className="font-medium text-indigo-900 mb-1">Suggested next step</p>
-                <p className="text-indigo-800">
+              <div className="bg-indigo-50 dark:bg-indigo-950/40 p-3 rounded-md border border-indigo-100 dark:border-indigo-900/60">
+                <p className="font-medium text-indigo-900 dark:text-indigo-200 mb-1">Suggested next step</p>
+                <p className="text-indigo-800 dark:text-indigo-300">
                   {flagged.length > 0
                     ? 'Review the flagged experiments and cross-reference with recent publications in your library.'
                     : experiments.length === 0

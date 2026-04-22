@@ -98,8 +98,8 @@ export function NotebookPage() {
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Lab notebook</h1>
-          <p className="text-slate-500">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Lab notebook</h1>
+          <p className="text-slate-500 dark:text-slate-400">
             Hands-free observations. Tap the mic, talk, stop — LabOS transcribes and saves it.
           </p>
         </div>
@@ -177,7 +177,7 @@ export function NotebookPage() {
               <p>{summary.summary}</p>
               {summary.observations?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
                     Observations
                   </p>
                   <ul className="list-disc list-inside space-y-1">
@@ -189,7 +189,7 @@ export function NotebookPage() {
               )}
               {summary.openQuestions?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
                     Open questions
                   </p>
                   <ul className="list-disc list-inside space-y-1">
@@ -201,7 +201,7 @@ export function NotebookPage() {
               )}
               {summary.suggestedFollowups?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
                     Suggested followups
                   </p>
                   <ul className="list-disc list-inside space-y-1">
@@ -225,14 +225,14 @@ export function NotebookPage() {
         <CardHeader className="pb-3 border-b border-slate-100">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Entries</CardTitle>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               {observations.length} total · {todayCount} today
             </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {observations.length === 0 ? (
-            <div className="p-10 text-center text-slate-500">
+            <div className="p-10 text-center text-slate-500 dark:text-slate-400">
               <NotebookPen className="w-10 h-10 mx-auto text-slate-300 mb-3" />
               <p className="text-sm">No entries yet. Tap the mic above or type one.</p>
             </div>
@@ -251,7 +251,7 @@ export function NotebookPage() {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
                           <span>{formatTime(obs.createdAt)}</span>
                           {obs.durationSec ? (
                             <span className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">

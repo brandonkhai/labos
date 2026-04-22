@@ -96,8 +96,8 @@ export function LibraryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-2 min-w-0">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Lab library</h1>
-          <p className="text-slate-500">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Lab library</h1>
+          <p className="text-slate-500 dark:text-slate-400">
             Search PubMed directly and save papers to {profile?.name || 'the lab'}'s library.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function LibraryPage() {
           <button
             onClick={() => setView('library')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === 'library' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              view === 'library' ? 'bg-white text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
             }`}
           >
             Saved ({papers.length})
@@ -113,7 +113,7 @@ export function LibraryPage() {
           <button
             onClick={() => setView('search')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              view === 'search' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              view === 'search' ? 'bg-white text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
             }`}
           >
             Search PubMed
@@ -192,7 +192,7 @@ function SearchResults({
 }) {
   if (results.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-500">
+      <div className="p-8 text-center text-slate-500 dark:text-slate-400">
         Type a query and hit search to pull live results from PubMed.
       </div>
     );
@@ -207,11 +207,11 @@ function SearchResults({
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-4 min-w-0 flex-1 cursor-pointer" onClick={() => onExpand(s.pmid)}>
                 <div className="bg-slate-100 p-2 rounded-lg shrink-0">
-                  <FileText className="w-5 h-5 text-slate-500" />
+                  <FileText className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-medium text-slate-900">{s.title}</h3>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100">{s.title}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     {s.authors} • {s.journal}
                     {s.year ? ` (${s.year})` : ''}
                   </p>
@@ -281,7 +281,7 @@ function SavedList({
 }) {
   if (papers.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-500">
+      <div className="p-8 text-center text-slate-500 dark:text-slate-400">
         No papers saved yet. Switch to <span className="font-medium">Search PubMed</span> and bookmark a few.
       </div>
     );
@@ -299,11 +299,11 @@ function SavedList({
                 onClick={() => setExpanded(isExpanded ? null : key)}
               >
                 <div className="bg-slate-100 p-2 rounded-lg shrink-0">
-                  <FileText className="w-5 h-5 text-slate-500" />
+                  <FileText className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-medium text-slate-900">{p.title}</h3>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100">{p.title}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     {p.authors} • {p.journal}
                     {p.year ? ` (${p.year})` : ''}
                   </p>

@@ -29,8 +29,8 @@ export function HypothesesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Hypothesis board</h1>
-          <p className="text-slate-500">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Hypothesis board</h1>
+          <p className="text-slate-500 dark:text-slate-400">
             Track, test, and evaluate scientific bets for {profile?.name || 'the lab'}.
           </p>
         </div>
@@ -80,7 +80,7 @@ export function HypothesesPage() {
 
       <div className="grid gap-6">
         {hypotheses.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 border border-slate-200 rounded-xl bg-white">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400 border border-slate-200 rounded-xl bg-white">
             <Lightbulb className="w-12 h-12 mx-auto text-slate-300 mb-4" />
             <p>No hypotheses registered yet.</p>
           </div>
@@ -118,11 +118,11 @@ export function HypothesesPage() {
                         {h.status.charAt(0).toUpperCase() + h.status.slice(1)}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-slate-900 mt-2">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-2">
                       <span className="text-indigo-600 font-semibold">Prediction:</span> {h.prediction}
                     </p>
                   </div>
-                  <div className="text-right text-xs text-slate-500 shrink-0">
+                  <div className="text-right text-xs text-slate-500 dark:text-slate-400 shrink-0">
                     <p>{h.researcher}</p>
                     <p>{h.date}</p>
                   </div>
@@ -144,7 +144,7 @@ export function HypothesesPage() {
                 )}
                 {h.experiments?.length > 0 && (
                   <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs font-medium text-slate-500 py-1">Linked experiments:</span>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 py-1">Linked experiments:</span>
                     {h.experiments.map((exp) => (
                       <span
                         key={exp}
