@@ -1,21 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Beaker,
-  Upload,
-  Library,
-  Lightbulb,
-  Settings,
-  Home,
-  Menu,
-  NotebookPen,
-  Search,
-  X,
+  Home, BookOpen, Beaker, GraduationCap, User, Menu, Search, X, Flame,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { useLab } from '@/src/lib/context';
+import { useLab, levelName } from '@/src/lib/context';
 
-/** Get 2-letter initials from a full name, falling back to "?". */
 function initialsOf(name?: string): string {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/);
@@ -24,77 +14,101 @@ function initialsOf(name?: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const NAV_ITEMS = [
+  { name: 'Home',        path: '/',            icon: Home,           color: 'text-brand-600' },
+  { name: 'Notes',       path: '/notes',        icon: BookOpen,       color: 'text-sky-500' },
+  { name: 'Experiments', path: '/experiments',  icon: Beaker,         color: 'text-coral-500' },
+  { name: 'Learn',       path: '/learn',        icon: GraduationCap,  color: 'text-learn-500' },
+  { name: 'Profile',     path: '/profile',      icon: User,           color: 'text-brand-600' },
+];
+
+function isActive(path: string, current: string): boolean {
+  if (path === '/') return current === '/';
+  return current === path || current.startsWith(path + '/');
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { profile } = useLab();
+  const { profile, gamification } = useLab();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Notebook', path: '/notebook', icon: NotebookPen },
-    { name: 'Experiments', path: '/experiments', icon: Beaker },
-    { name: 'Upload Data', path: '/upload', icon: Upload },
-    { name: 'Hypotheses', path: '/hypotheses', icon: Lightbulb },
-    { name: 'Library', path: '/library', icon: Library },
-  ];
-
-  const isSettings = location.pathname === '/settings';
+  const { xp, streak } = gamification;
+  const level = Math.floor(xp / 100) + 1;
+  const xpInLevel = xp % 100;
   const initials = initialsOf(profile?.user || profile?.name);
 
-  const openPalette = () => {
-    window.dispatchEvent(new CustomEvent('labos:open-palette'));
-  };
+  const openPalette = () => window.dispatchEvent(new CustomEvent('labos:open-palette'));
+
+  const pageTitle = NAV_ITEMS.find((item) => isActive(item.path, location.pathname))?.name
+    ?? (location.pathname.startsWith('/experiments/') ? 'Experiment' : 'LabOS');
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
-      {/* Sidebar (off-canvas on small screens) */}
+    <div className="flex h-screen bg-brand-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+
+      {/* ── Desktop Sidebar ───────────────────────────── */}
       <aside
         className={cn(
-          'fixed lg:static inset-y-0 left-0 z-30 w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col transition-transform duration-200',
+          'fixed lg:static inset-y-0 left-0 z-30 w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-200',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
       >
-        <div className="p-6 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="bg-indigo-600 p-2 rounded-lg shrink-0">
+        {/* Logo */}
+        <div className="p-5 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-brand-500 w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shrink-0">
             <Beaker className="w-5 h-5 text-white" />
           </div>
-          <h1
-            className="font-semibold text-lg tracking-tight text-slate-900 dark:text-slate-100 truncate"
-            title={profile?.name || 'LabOS'}
-          >
-            {profile?.name || 'LabOS'}
-          </h1>
+          <div className="min-w-0">
+            <h1 className="font-display font-800 text-base leading-tight text-slate-900 dark:text-slate-100 truncate">
+              LabOS
+            </h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+              {profile?.name || 'My workspace'}
+            </p>
+          </div>
           <button
             className="ml-auto lg:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Close menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path ||
-              (item.path !== '/' && location.pathname.startsWith(item.path));
+        {/* XP bar */}
+        <div className="px-4 pt-3 pb-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Level {level} · {levelName(level)}
+            </span>
+            <span className="text-xs font-semibold text-xp-600 dark:text-xp-400">{xp} XP</span>
+          </div>
+          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-xp-400 rounded-full transition-all duration-500"
+              style={{ width: `${xpInLevel}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.path, location.pathname);
             return (
               <Link
                 key={item.name}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                  active
+                    ? 'bg-brand-500 text-white shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100',
                 )}
               >
                 <item.icon
                   className={cn(
-                    'w-4 h-4',
-                    isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-slate-400 dark:text-slate-500',
+                    'w-4 h-4 shrink-0',
+                    active ? 'text-white' : item.color,
                   )}
                 />
                 {item.name}
@@ -103,31 +117,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <Link
-            to="/settings"
-            onClick={() => setSidebarOpen(false)}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors w-full',
-              isSettings
-                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100',
-            )}
-          >
-            <Settings
-              className={cn(
-                'w-4 h-4',
-                isSettings
-                  ? 'text-indigo-600 dark:text-indigo-400'
-                  : 'text-slate-400 dark:text-slate-500',
-              )}
-            />
-            Settings
-          </Link>
-        </div>
+        {/* Streak badge */}
+        {streak > 0 && (
+          <div className="mx-4 mb-4 p-3 bg-gradient-to-r from-streak-500/10 to-xp-500/10 border border-streak-200 dark:border-streak-900/40 rounded-2xl flex items-center gap-3">
+            <span className="text-2xl">🔥</span>
+            <div>
+              <p className="text-sm font-bold text-streak-600 dark:text-streak-400">{streak}-day streak</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Keep it going!</p>
+            </div>
+          </div>
+        )}
       </aside>
 
-      {/* Dim layer for mobile sidebar */}
+      {/* Dim overlay for mobile sidebar */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-20 bg-slate-950/40 lg:hidden"
@@ -135,48 +137,85 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-6 justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              className="lg:hidden text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <h2 className="font-medium text-slate-800 dark:text-slate-200">
-              {isSettings
-                ? 'Settings'
-                : navItems.find((item) => item.path === location.pathname)?.name || 'LabOS'}
-            </h2>
-          </div>
-          <div className="flex items-center gap-3">
+      {/* ── Main Content ──────────────────────────────── */}
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        {/* Top header */}
+        <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-4 gap-3 shrink-0">
+          <button
+            className="lg:hidden text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 mr-1"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          <h2 className="font-display font-800 text-slate-800 dark:text-slate-200 text-base">
+            {pageTitle}
+          </h2>
+
+          <div className="ml-auto flex items-center gap-2">
+            {/* Streak (mobile) */}
+            {streak > 0 && (
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-streak-50 dark:bg-streak-900/30 border border-streak-200 dark:border-streak-800/50 text-streak-600 dark:text-streak-400">
+                <Flame className="w-3.5 h-3.5" />
+                <span className="text-xs font-bold">{streak}</span>
+              </div>
+            )}
+
+            {/* XP pill */}
+            <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-xp-50 dark:bg-xp-900/20 border border-xp-200 dark:border-xp-800/40 text-xp-700 dark:text-xp-400">
+              <span className="text-xs font-bold">⚡ {xp} XP</span>
+            </div>
+
+            {/* Search */}
             <button
               onClick={openPalette}
-              className="hidden sm:flex items-center gap-2 h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Search (⌘K)"
             >
-              <Search className="w-4 h-4" />
-              <span>Search…</span>
-              <kbd className="ml-2 hidden md:inline text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5">
+              <Search className="w-3.5 h-3.5" />
+              <span className="text-xs">Search…</span>
+              <kbd className="ml-1 hidden md:inline text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5">
                 ⌘K
               </kbd>
             </button>
+
+            {/* Avatar */}
             <Link
-              to="/settings"
-              className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/60 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-medium text-sm hover:ring-2 hover:ring-indigo-400/60"
-              title={profile?.user ? `Signed in as ${profile.user}` : 'Set your name in Settings'}
+              to="/profile"
+              className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-brand-700 dark:text-brand-300 font-bold text-sm hover:ring-2 hover:ring-brand-400/60 transition-all"
+              title="Profile"
             >
               {initials}
             </Link>
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-6xl mx-auto">{children}</div>
+        {/* Page content */}
+        <div className="flex-1 overflow-auto p-4 pb-24 lg:pb-6">
+          <div className="max-w-5xl mx-auto">{children}</div>
         </div>
+
+        {/* ── Bottom tab bar (mobile only) ─────────────── */}
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 h-16 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 z-20">
+          {NAV_ITEMS.map((item) => {
+            const active = isActive(item.path, location.pathname);
+            return (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={cn(
+                  'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all',
+                  active ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500',
+                )}
+              >
+                <item.icon className={cn('w-5 h-5', active && 'stroke-[2.5]')} />
+                <span className="text-[10px] font-semibold">{item.name}</span>
+                {active && <div className="w-1 h-1 rounded-full bg-brand-500" />}
+              </Link>
+            );
+          })}
+        </nav>
       </main>
     </div>
   );

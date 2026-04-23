@@ -13,6 +13,7 @@ import { HypothesesPage } from './pages/HypothesesPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { NotebookPage } from './pages/NotebookPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LearnPage } from './pages/LearnPage';
 import { LabProvider, useLab } from './lib/context';
 import { Onboarding } from './components/Onboarding';
 import { ThemeProvider } from './lib/theme';
@@ -23,8 +24,8 @@ function AppContent() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-sm text-slate-500 dark:text-slate-400">Loading workspace…</div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-50 dark:bg-slate-950">
+        <div className="text-sm text-slate-500 dark:text-slate-400">Loading…</div>
       </div>
     );
   }
@@ -39,14 +40,20 @@ function AppContent() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/upload" element={<UploadPage />} />
+          {/* v0.6 routes */}
+          <Route path="/notes" element={<NotebookPage />} />
+          <Route path="/learn" element={<LearnPage />} />
+          <Route path="/profile" element={<SettingsPage />} />
+          {/* kept routes */}
           <Route path="/experiments" element={<ExperimentsPage />} />
           <Route path="/experiments/:id" element={<ExperimentDetail />} />
-          <Route path="/hypotheses" element={<HypothesesPage />} />
+          <Route path="/upload" element={<UploadPage />} />
           <Route path="/library" element={<LibraryPage />} />
+          {/* legacy routes still work */}
           <Route path="/notebook" element={<NotebookPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<div className="p-6 text-slate-500 dark:text-slate-400">Page under construction.</div>} />
+          <Route path="/hypotheses" element={<HypothesesPage />} />
+          <Route path="*" element={<div className="p-6 text-slate-500 dark:text-slate-400">Page not found.</div>} />
         </Routes>
       </Layout>
     </Router>

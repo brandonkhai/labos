@@ -1,13 +1,6 @@
 /**
- * Client-side persistence layer.
- *
- * All notebook/experiment/paper data lives in the visitor's own browser via
- * localStorage — no backend database. This keeps the app trivial to deploy
- * (one stateless Node service) and means each user's data is isolated from
- * every other visitor by default.
- *
- * The return shapes mirror what the old Express data routes returned, so
- * `api.ts` can keep the same public contract for the React components.
+ * Client-side persistence layer — v0.6
+ * All data lives in browser localStorage. Gamification (XP, streaks) added in v0.6.
  */
 
 import type {
@@ -20,12 +13,29 @@ import type {
 
 const STORAGE_KEY = 'labos.v1';
 
+// ---------- Gamification ----------
+
+export interface GamificationState {
+  xp: number;
+  streak: number;
+  lastActiveDate: string; // YYYY-MM-DD or ''
+  longestStreak: number;
+}
+
+const EMPTY_GAMIFICATION: GamificationState = {
+  xp: 0,
+  streak: 0,
+  lastActiveDate: '',
+  longestStreak: 0,
+};
+
 interface AppState {
   profile: LabProfile | null;
   papers: SavedPaper[];
   hypotheses: Hypothesis[];
   experiments: Experiment[];
   observations: Observation[];
+  gamification: GamificationState;
 }
 
 const EMPTY: AppState = {
@@ -34,6 +44,7 @@ const EMPTY: AppState = {
   hypotheses: [],
   experiments: [],
   observations: [],
+  gamification: { ...EMPTY_GAMIFICATION },
 };
 
 function canUseStorage(): boolean {
@@ -56,6 +67,12 @@ function load(): AppState {
       hypotheses: Array.isArray(parsed.hypotheses) ? parsed.hypotheses : [],
       experiments: Array.isArray(parsed.experiments) ? parsed.experiments : [],
       observations: Array.isArray(parsed.observations) ? parsed.observations : [],
+      gamification: {
+        xp: parsed.gamification?.xp ?? 0,
+        streak: parsed.gamification?.streak ?? 0,
+        lastActiveDate: parsed.gamification?.lastActiveDate ?? '',
+        longestStreak: parsed.gamification?.longestStreak ?? 0,
+      },
     };
   } catch (err) {
     console.warn('[localStore] failed to parse, starting fresh:', err);
@@ -81,13 +98,55 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-// Newest-first helper for list returns.
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function yesterdayStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function byCreatedDesc<T extends { createdAt?: string; savedAt?: string; date?: string }>(list: T[]): T[] {
   return [...list].sort((a, b) => {
     const ak = a.createdAt || a.savedAt || a.date || '';
     const bk = b.createdAt || b.savedAt || b.date || '';
     return bk.localeCompare(ak);
   });
+}
+
+// ---------- Gamification ----------
+
+export function getGamification(): GamificationState {
+  return load().gamification;
+}
+
+export function addXP(amount: number): { gamification: GamificationState; leveledUp: boolean; newLevel: number } {
+  const s = load();
+  const g = { ...s.gamification };
+  const prevLevel = Math.floor(g.xp / 100) + 1;
+
+  g.xp += amount;
+
+  const today = todayStr();
+  const yesterday = yesterdayStr();
+  if (g.lastActiveDate === today) {
+    // same day — streak unchanged
+  } else if (g.lastActiveDate === yesterday) {
+    g.streak += 1;
+    g.longestStreak = Math.max(g.longestStreak, g.streak);
+  } else {
+    g.streak = 1;
+    g.longestStreak = Math.max(g.longestStreak, 1);
+  }
+  g.lastActiveDate = today;
+
+  const newLevel = Math.floor(g.xp / 100) + 1;
+  const leveledUp = newLevel > prevLevel;
+
+  save({ ...s, gamification: g });
+  return { gamification: g, leveledUp, newLevel };
 }
 
 // ---------- Profile ----------
@@ -99,10 +158,7 @@ export function getProfile(): { profile: LabProfile | null; papers: SavedPaper[]
 
 export function putProfile(profile: LabProfile): { profile: LabProfile } {
   const s = load();
-  const saved: LabProfile = {
-    ...profile,
-    createdAt: s.profile?.createdAt || nowIso(),
-  };
+  const saved: LabProfile = { ...profile, createdAt: s.profile?.createdAt || nowIso() };
   save({ ...s, profile: saved });
   return { profile: saved };
 }
@@ -111,7 +167,6 @@ export function putProfile(profile: LabProfile): { profile: LabProfile } {
 
 export function savePaper(input: Partial<SavedPaper>): { papers: SavedPaper[] } {
   const s = load();
-  // Dedup by pmid or title+year if pmid missing.
   const key = (p: Partial<SavedPaper>) => (p.pmid ? `pmid:${p.pmid}` : `t:${(p.title || '').toLowerCase()}|${p.year || ''}`);
   const inputKey = key(input);
   const existing = s.papers.findIndex((p) => key(p) === inputKey);
@@ -230,7 +285,6 @@ export function deleteExperiment(id: string): { experiments: Experiment[] } {
 
 export function listObservations(): { observations: Observation[] } {
   const s = load();
-  // Observations are timestamped; sort newest-first for the notebook feed.
   const observations = [...s.observations].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return { observations };
 }
@@ -267,7 +321,6 @@ export function deleteObservation(id: string): { observations: Observation[] } {
 
 // ---------- Utility ----------
 
-/** Exposed so a "reset workspace" button can nuke the saved state later. */
 export function clearAll(): void {
   if (!canUseStorage()) return;
   window.localStorage.removeItem(STORAGE_KEY);

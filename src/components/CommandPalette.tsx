@@ -16,7 +16,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Beaker, NotebookPen, Upload, Lightbulb, Library, Home, Settings,
+  Search, Beaker, BookOpen, Upload, GraduationCap, Library, Home, User,
   FileText, Mic,
 } from 'lucide-react';
 import { useLab } from '@/src/lib/context';
@@ -33,11 +33,13 @@ type Item = {
 };
 
 const NAV_ITEMS: Omit<Item, 'haystack'>[] = [
-  { id: 'nav:/', label: 'Dashboard', icon: Home, path: '/', group: 'Navigate' },
-  { id: 'nav:/notebook', label: 'Notebook', icon: NotebookPen, path: '/notebook', group: 'Navigate' },
+  { id: 'nav:/', label: 'Home', icon: Home, path: '/', group: 'Navigate' },
+  { id: 'nav:/notes', label: 'Notes', icon: BookOpen, path: '/notes', group: 'Navigate' },
   { id: 'nav:/experiments', label: 'Experiments', icon: Beaker, path: '/experiments', group: 'Navigate' },
-  { id: 'nav:/upload', label: 'Upload data', icon: Upload, path: '/upload', group: 'Navigate' },
-  { id: 'nav:/hypotheses', label: 'Hypotheses', icon: Lightbulb, path: '/hypotheses', group: 'Navigate' },
+  { id: 'nav:/learn', label: 'Learn', icon: GraduationCap, path: '/learn', group: 'Navigate' },
+  { id: 'nav:/library', label: 'Papers', icon: Library, path: '/library', group: 'Navigate' },
+  { id: 'nav:/profile', label: 'Profile', icon: User, path: '/profile', group: 'Navigate' },
+  { id: 'nav:/upload', label: 'New Experiment', icon: Upload, path: '/upload', group: 'Navigate' },
   { id: 'nav:/library', label: 'Library', icon: Library, path: '/library', group: 'Navigate' },
   { id: 'nav:/settings', label: 'Settings', icon: Settings, path: '/settings', group: 'Navigate' },
 ];

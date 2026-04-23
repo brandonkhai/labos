@@ -7,9 +7,25 @@ import type {
   Hypothesis,
   Observation,
 } from './api';
+import * as local from './localStore';
+import type { GamificationState } from './localStore';
 
-// Re-export so existing callers keep compiling.
 export type { LabProfile, SavedPaper as Paper, Experiment as Activity, Hypothesis, Observation };
+
+// XP reward constants
+export const XP = {
+  NOTE_ENTRY: 10,
+  EXPERIMENT: 25,
+  PAPER: 15,
+  LEARN_DAILY: 5,
+} as const;
+
+export function levelName(level: number): string {
+  if (level <= 2)  return 'Explorer';
+  if (level <= 7)  return 'Apprentice';
+  if (level <= 15) return 'Researcher';
+  return 'Scientist';
+}
 
 interface LabContextType {
   ready: boolean;
@@ -18,6 +34,7 @@ interface LabContextType {
   experiments: Experiment[];
   hypotheses: Hypothesis[];
   observations: Observation[];
+  gamification: GamificationState;
   setProfile: (profile: LabProfile) => Promise<void>;
   refresh: () => Promise<void>;
   addExperiment: (exp: Partial<Experiment>) => Promise<Experiment>;
@@ -30,6 +47,8 @@ interface LabContextType {
   addObservation: (obs: Partial<Observation>) => Promise<Observation>;
   updateObservation: (id: string, patch: Partial<Observation>) => Promise<void>;
   removeObservation: (id: string) => Promise<void>;
+  /** Award XP. Returns new state + leveledUp flag. */
+  awardXP: (amount: number) => { gamification: GamificationState; leveledUp: boolean; newLevel: number };
 }
 
 const LabContext = createContext<LabContextType | undefined>(undefined);
@@ -41,6 +60,9 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [hypotheses, setHypotheses] = useState<Hypothesis[]>([]);
   const [observations, setObservations] = useState<Observation[]>([]);
+  const [gamification, setGamification] = useState<GamificationState>({
+    xp: 0, streak: 0, lastActiveDate: '', longestStreak: 0,
+  });
 
   const refresh = useCallback(async () => {
     const [prof, exps, obs] = await Promise.all([
@@ -53,19 +75,24 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     setHypotheses(prof.hypotheses);
     setExperiments(exps.experiments);
     setObservations(obs.observations);
+    setGamification(local.getGamification());
   }, []);
 
   useEffect(() => {
     refresh()
-      .catch((err) => {
-        console.warn('[LabProvider] initial refresh failed:', err);
-      })
+      .catch((err) => console.warn('[LabProvider] initial refresh failed:', err))
       .finally(() => setReady(true));
   }, [refresh]);
 
   const setProfile = useCallback(async (next: LabProfile) => {
     const { profile: saved } = await api.putProfile(next);
     setProfileState(saved);
+  }, []);
+
+  const awardXP = useCallback((amount: number) => {
+    const result = local.addXP(amount);
+    setGamification(result.gamification);
+    return result;
   }, []);
 
   const addExperiment = useCallback(async (exp: Partial<Experiment>) => {
@@ -127,6 +154,7 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     experiments,
     hypotheses,
     observations,
+    gamification,
     setProfile,
     refresh,
     addExperiment,
@@ -139,6 +167,7 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     addObservation,
     updateObservation,
     removeObservation,
+    awardXP,
   };
 
   return <LabContext.Provider value={value}>{children}</LabContext.Provider>;
@@ -146,8 +175,6 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
 
 export function useLab() {
   const context = useContext(LabContext);
-  if (context === undefined) {
-    throw new Error('useLab must be used within a LabProvider');
-  }
+  if (context === undefined) throw new Error('useLab must be used within a LabProvider');
   return context;
 }
