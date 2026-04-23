@@ -85,11 +85,9 @@ export function AskLabOS() {
     try {
       const { reply } = await api.chat(newMessages, buildContext());
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages((m) => [...m, {
-        role: 'assistant',
-        content: 'Something went wrong — check your connection and try again.',
-      }]);
+    } catch (err: any) {
+      const msg = err?.message || 'Something went wrong — check your connection and try again.';
+      setMessages((m) => [...m, { role: 'assistant', content: msg }]);
     } finally {
       setLoading(false);
     }

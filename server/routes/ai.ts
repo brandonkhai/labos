@@ -179,7 +179,7 @@ ${JSON.stringify(context || {}, null, 2)}
     ];
 
     const response = await ai.models.generateContent({
-      model: MODEL_THOUGHTFUL,
+      model: MODEL_FAST,
       contents,
       config: { temperature: 0.4 },
     });
