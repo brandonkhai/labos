@@ -1,25 +1,25 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Beaker, GraduationCap, BookMarked, ArrowRight, Flame, Zap } from 'lucide-react';
+import { BookOpen, Beaker, CheckSquare, BookMarked, ArrowRight, Flame, Zap } from 'lucide-react';
 import { useLab, levelName } from '@/src/lib/context';
 import { cn } from '@/src/lib/utils';
 
 const DAILY_TIPS = [
-  "Always label your tubes immediately — future you will thank present you.",
-  "When troubleshooting a failed Western, check antibody concentration before blaming the protocol.",
   "A good notebook entry includes what you expected to happen, not just what did.",
-  "If something looks weird under the microscope, image it before anything else — you can't un-look.",
-  "Controls aren't optional. A result without a control is a question, not an answer.",
   "Before asking your mentor, write down your three best guesses for what went wrong.",
-  "Replicates tell you if the effect is real. Repeats tell you if it's reproducible. Both matter.",
-  "Date every gel image, every tube, every plate. Seriously. Every one.",
-  "If you're tired and rushed, it's better to pause an experiment than to rush through it.",
+  "If you're tired and rushed, it's better to pause your work than to rush through it.",
   "Reading one paper a day, even briefly, compounds faster than you'd expect over a semester.",
-  "Write your methods as you do them, not after. Memory is unreliable after a 6-hour protocol.",
-  "qPCR triplicates exist for a reason — don't skip them when you're in a hurry.",
-  "A failed experiment that teaches you something is not a wasted experiment.",
-  "Your PI would rather hear about a problem early than a disaster late.",
-  "Keep a 'parking lot' in your notebook for random ideas — review it weekly.",
+  "Write your methods as you do them, not after. Memory is unreliable after a long session.",
+  "A failed attempt that teaches you something is not a wasted attempt.",
+  "Your supervisor would rather hear about a problem early than a disaster late.",
+  "Keep a 'parking lot' in your notes for random ideas — review it weekly.",
+  "Controls aren't optional. A result without a control is a question, not an answer.",
+  "Breaking big tasks into smaller sub-tasks makes progress visible and momentum easier to maintain.",
+  "When stuck, explain your problem out loud — you'll often spot the issue yourself.",
+  "Replicates tell you if the effect is real. Repeats tell you if it's reproducible. Both matter.",
+  "Note your reasoning, not just your results. Future you will want to know why you made that call.",
+  "One hour of focused work beats three hours of distracted work. Protect your deep-work blocks.",
+  "Date every file, every draft, every version. Seriously. Every one.",
 ];
 
 function getTodayTip(): string {
@@ -163,10 +163,10 @@ export function Dashboard() {
             bgClass="border-coral-100 bg-coral-50/60 dark:bg-coral-950/20 dark:border-coral-900/40"
           />
           <QuickActionCard
-            icon={GraduationCap}
-            label="Learn something"
-            sublabel="Protocols & glossary"
-            to="/learn"
+            icon={CheckSquare}
+            label="My tasks"
+            sublabel="+15 XP per task done"
+            to="/tasks"
             colorClass="bg-learn-500"
             bgClass="border-learn-100 bg-learn-50/60 dark:bg-learn-950/20 dark:border-learn-900/40"
           />
@@ -238,7 +238,7 @@ export function Dashboard() {
       {/* Empty state (first visit) */}
       {experiments.length === 0 && observations.length === 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-brand-200 dark:border-brand-800/50 p-8 text-center">
-          <p className="text-3xl mb-3">🧬</p>
+          <p className="text-3xl mb-3">🚀</p>
           <p className="font-display font-800 text-lg text-slate-700 dark:text-slate-300 mb-2">
             You're all set!
           </p>

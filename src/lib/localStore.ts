@@ -1,6 +1,6 @@
 /**
  * Client-side persistence layer — v0.6
- * All data lives in browser localStorage. Gamification (XP, streaks) added in v0.6.
+ * All data lives in browser localStorage. Gamification (XP, streaks) and Todos added in v0.6.
  */
 
 import type {
@@ -18,16 +18,27 @@ const STORAGE_KEY = 'labos.v1';
 export interface GamificationState {
   xp: number;
   streak: number;
-  lastActiveDate: string; // YYYY-MM-DD or ''
+  lastActiveDate: string;
   longestStreak: number;
 }
 
 const EMPTY_GAMIFICATION: GamificationState = {
-  xp: 0,
-  streak: 0,
-  lastActiveDate: '',
-  longestStreak: 0,
+  xp: 0, streak: 0, lastActiveDate: '', longestStreak: 0,
 };
+
+// ---------- Todos ----------
+
+export interface Todo {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: string;
+  completedAt?: string;
+  dueDate?: string;       // YYYY-MM-DD
+  priority: 'high' | 'normal';
+}
+
+// ---------- AppState ----------
 
 interface AppState {
   profile: LabProfile | null;
@@ -36,6 +47,7 @@ interface AppState {
   experiments: Experiment[];
   observations: Observation[];
   gamification: GamificationState;
+  todos: Todo[];
 }
 
 const EMPTY: AppState = {
@@ -45,14 +57,12 @@ const EMPTY: AppState = {
   experiments: [],
   observations: [],
   gamification: { ...EMPTY_GAMIFICATION },
+  todos: [],
 };
 
 function canUseStorage(): boolean {
-  try {
-    return typeof window !== 'undefined' && !!window.localStorage;
-  } catch {
-    return false;
-  }
+  try { return typeof window !== 'undefined' && !!window.localStorage; }
+  catch { return false; }
 }
 
 function load(): AppState {
@@ -67,6 +77,7 @@ function load(): AppState {
       hypotheses: Array.isArray(parsed.hypotheses) ? parsed.hypotheses : [],
       experiments: Array.isArray(parsed.experiments) ? parsed.experiments : [],
       observations: Array.isArray(parsed.observations) ? parsed.observations : [],
+      todos: Array.isArray(parsed.todos) ? parsed.todos : [],
       gamification: {
         xp: parsed.gamification?.xp ?? 0,
         streak: parsed.gamification?.streak ?? 0,
@@ -82,30 +93,17 @@ function load(): AppState {
 
 function save(state: AppState): void {
   if (!canUseStorage()) return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (err) {
-    console.error('[localStore] failed to save:', err);
-  }
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (err) { console.error('[localStore] failed to save:', err); }
 }
 
 function genId(prefix: string): string {
-  const rand = Math.random().toString(36).slice(2, 8);
-  return `${prefix}-${Date.now().toString(36)}-${rand}`;
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
+function nowIso(): string { return new Date().toISOString(); }
+function todayStr(): string { return new Date().toISOString().slice(0, 10); }
 function yesterdayStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10);
 }
 
 function byCreatedDesc<T extends { createdAt?: string; savedAt?: string; date?: string }>(list: T[]): T[] {
@@ -118,21 +116,17 @@ function byCreatedDesc<T extends { createdAt?: string; savedAt?: string; date?: 
 
 // ---------- Gamification ----------
 
-export function getGamification(): GamificationState {
-  return load().gamification;
-}
+export function getGamification(): GamificationState { return load().gamification; }
 
 export function addXP(amount: number): { gamification: GamificationState; leveledUp: boolean; newLevel: number } {
   const s = load();
   const g = { ...s.gamification };
   const prevLevel = Math.floor(g.xp / 100) + 1;
-
   g.xp += amount;
-
   const today = todayStr();
   const yesterday = yesterdayStr();
   if (g.lastActiveDate === today) {
-    // same day — streak unchanged
+    // same day — no streak change
   } else if (g.lastActiveDate === yesterday) {
     g.streak += 1;
     g.longestStreak = Math.max(g.longestStreak, g.streak);
@@ -141,10 +135,8 @@ export function addXP(amount: number): { gamification: GamificationState; levele
     g.longestStreak = Math.max(g.longestStreak, 1);
   }
   g.lastActiveDate = today;
-
   const newLevel = Math.floor(g.xp / 100) + 1;
   const leveledUp = newLevel > prevLevel;
-
   save({ ...s, gamification: g });
   return { gamification: g, leveledUp, newLevel };
 }
@@ -317,6 +309,52 @@ export function deleteObservation(id: string): { observations: Observation[] } {
   const observations = s.observations.filter((o) => o.id !== id);
   save({ ...s, observations });
   return { observations };
+}
+
+// ---------- Todos ----------
+
+export function listTodos(): { todos: Todo[] } {
+  return { todos: load().todos };
+}
+
+export function createTodo(input: Partial<Todo>): { todo: Todo; todos: Todo[] } {
+  const s = load();
+  const todo: Todo = {
+    id: input.id || genId('TODO'),
+    text: (input.text || '').trim(),
+    done: false,
+    createdAt: nowIso(),
+    dueDate: input.dueDate,
+    priority: input.priority || 'normal',
+  };
+  const todos = [todo, ...s.todos];
+  save({ ...s, todos });
+  return { todo, todos };
+}
+
+export function completeTodo(id: string): { todos: Todo[] } {
+  const s = load();
+  const todos = s.todos.map((t) =>
+    t.id === id ? { ...t, done: true, completedAt: nowIso() } : t,
+  );
+  save({ ...s, todos });
+  return { todos };
+}
+
+export function uncompleteTodo(id: string): { todos: Todo[] } {
+  const s = load();
+  const todos = s.todos.map((t) =>
+    t.id === id ? { ...t, done: false, completedAt: undefined } : t,
+  );
+  save({ ...s, todos });
+  return { todos };
+}
+
+export function deleteTodo(id: string): { todos: Todo[] } {
+  const s = load();
+  const todos = s.todos.filter((t) => t.id !== id);
+  save({ ...s, todos });
+  return { todos };
 }
 
 // ---------- Utility ----------

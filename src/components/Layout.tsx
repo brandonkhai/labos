@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Home, BookOpen, Beaker, GraduationCap, User, Menu, Search, X, Flame,
+  Home, BookOpen, Beaker, CheckSquare, User, Menu, Search, X, Flame,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useLab, levelName } from '@/src/lib/context';
@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { name: 'Home',        path: '/',            icon: Home,           color: 'text-brand-600' },
   { name: 'Notes',       path: '/notes',        icon: BookOpen,       color: 'text-sky-500' },
   { name: 'Experiments', path: '/experiments',  icon: Beaker,         color: 'text-coral-500' },
-  { name: 'Learn',       path: '/learn',        icon: GraduationCap,  color: 'text-learn-500' },
+  { name: 'Tasks',       path: '/tasks',        icon: CheckSquare,    color: 'text-learn-500' },
   { name: 'Profile',     path: '/profile',      icon: User,           color: 'text-brand-600' },
 ];
 
@@ -40,7 +40,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const openPalette = () => window.dispatchEvent(new CustomEvent('labos:open-palette'));
 
   const pageTitle = NAV_ITEMS.find((item) => isActive(item.path, location.pathname))?.name
-    ?? (location.pathname.startsWith('/experiments/') ? 'Experiment' : 'LabOS');
+    ?? (location.pathname.startsWith('/experiments/') ? 'Experiment'
+      : location.pathname === '/learn' ? 'Tasks'
+      : 'LabOS');
 
   return (
     <div className="flex h-screen bg-brand-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">

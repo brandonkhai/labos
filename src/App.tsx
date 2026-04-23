@@ -14,6 +14,7 @@ import { LibraryPage } from './pages/LibraryPage';
 import { NotebookPage } from './pages/NotebookPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LearnPage } from './pages/LearnPage';
+import { TodoPage } from './pages/TodoPage';
 import { LabProvider, useLab } from './lib/context';
 import { Onboarding } from './components/Onboarding';
 import { ThemeProvider } from './lib/theme';
@@ -42,6 +43,7 @@ function AppContent() {
           <Route path="/" element={<Dashboard />} />
           {/* v0.6 routes */}
           <Route path="/notes" element={<NotebookPage />} />
+          <Route path="/tasks" element={<TodoPage />} />
           <Route path="/learn" element={<LearnPage />} />
           <Route path="/profile" element={<SettingsPage />} />
           {/* kept routes */}

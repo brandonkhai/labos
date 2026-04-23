@@ -8,15 +8,17 @@ import type {
   Observation,
 } from './api';
 import * as local from './localStore';
-import type { GamificationState } from './localStore';
+import type { GamificationState, Todo } from './localStore';
 
 export type { LabProfile, SavedPaper as Paper, Experiment as Activity, Hypothesis, Observation };
+export type { Todo };
 
 // XP reward constants
 export const XP = {
   NOTE_ENTRY: 10,
   EXPERIMENT: 25,
   PAPER: 15,
+  TODO: 15,
   LEARN_DAILY: 5,
 } as const;
 
@@ -34,6 +36,7 @@ interface LabContextType {
   experiments: Experiment[];
   hypotheses: Hypothesis[];
   observations: Observation[];
+  todos: Todo[];
   gamification: GamificationState;
   setProfile: (profile: LabProfile) => Promise<void>;
   refresh: () => Promise<void>;
@@ -47,6 +50,10 @@ interface LabContextType {
   addObservation: (obs: Partial<Observation>) => Promise<Observation>;
   updateObservation: (id: string, patch: Partial<Observation>) => Promise<void>;
   removeObservation: (id: string) => Promise<void>;
+  addTodo: (todo: Partial<Todo>) => void;
+  completeTodo: (id: string) => void;
+  uncompleteTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
   /** Award XP. Returns new state + leveledUp flag. */
   awardXP: (amount: number) => { gamification: GamificationState; leveledUp: boolean; newLevel: number };
 }
@@ -60,6 +67,7 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [hypotheses, setHypotheses] = useState<Hypothesis[]>([]);
   const [observations, setObservations] = useState<Observation[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [gamification, setGamification] = useState<GamificationState>({
     xp: 0, streak: 0, lastActiveDate: '', longestStreak: 0,
   });
@@ -75,6 +83,7 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     setHypotheses(prof.hypotheses);
     setExperiments(exps.experiments);
     setObservations(obs.observations);
+    setTodos(local.listTodos().todos);
     setGamification(local.getGamification());
   }, []);
 
@@ -147,6 +156,26 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     setObservations(all);
   }, []);
 
+  const addTodo = useCallback((todo: Partial<Todo>) => {
+    const { todos: all } = local.createTodo(todo);
+    setTodos(all);
+  }, []);
+
+  const completeTodo = useCallback((id: string) => {
+    const { todos: all } = local.completeTodo(id);
+    setTodos(all);
+  }, []);
+
+  const uncompleteTodo = useCallback((id: string) => {
+    const { todos: all } = local.uncompleteTodo(id);
+    setTodos(all);
+  }, []);
+
+  const deleteTodo = useCallback((id: string) => {
+    const { todos: all } = local.deleteTodo(id);
+    setTodos(all);
+  }, []);
+
   const value: LabContextType = {
     ready,
     profile,
@@ -154,6 +183,7 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     experiments,
     hypotheses,
     observations,
+    todos,
     gamification,
     setProfile,
     refresh,
@@ -167,6 +197,10 @@ export function LabProvider({ children }: { children: React.ReactNode }) {
     addObservation,
     updateObservation,
     removeObservation,
+    addTodo,
+    completeTodo,
+    uncompleteTodo,
+    deleteTodo,
     awardXP,
   };
 

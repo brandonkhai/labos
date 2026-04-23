@@ -16,7 +16,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Beaker, BookOpen, Upload, GraduationCap, Library, Home, User,
+  Search, Beaker, BookOpen, Upload, CheckSquare, Library, Home, User,
   FileText, Mic,
 } from 'lucide-react';
 import { useLab } from '@/src/lib/context';
@@ -36,7 +36,7 @@ const NAV_ITEMS: Omit<Item, 'haystack'>[] = [
   { id: 'nav:/', label: 'Home', icon: Home, path: '/', group: 'Navigate' },
   { id: 'nav:/notes', label: 'Notes', icon: BookOpen, path: '/notes', group: 'Navigate' },
   { id: 'nav:/experiments', label: 'Experiments', icon: Beaker, path: '/experiments', group: 'Navigate' },
-  { id: 'nav:/learn', label: 'Learn', icon: GraduationCap, path: '/learn', group: 'Navigate' },
+  { id: 'nav:/tasks', label: 'Tasks', icon: CheckSquare, path: '/tasks', group: 'Navigate' },
   { id: 'nav:/library', label: 'Papers', icon: Library, path: '/library', group: 'Navigate' },
   { id: 'nav:/profile', label: 'Profile', icon: User, path: '/profile', group: 'Navigate' },
   { id: 'nav:/upload', label: 'New Experiment', icon: Upload, path: '/upload', group: 'Navigate' },
@@ -159,8 +159,8 @@ export function CommandPalette() {
       }
       if (gPressed) {
         const map: Record<string, string> = {
-          d: '/', n: '/notebook', e: '/experiments', u: '/upload',
-          h: '/hypotheses', l: '/library', s: '/settings',
+          d: '/', n: '/notes', e: '/experiments', u: '/upload',
+          t: '/tasks', l: '/library', s: '/settings',
         };
         const dest = map[e.key.toLowerCase()];
         gPressed = false;
@@ -285,7 +285,7 @@ export function CommandPalette() {
         <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center gap-3">
           <span><kbd className="font-mono">↑ ↓</kbd> navigate</span>
           <span><kbd className="font-mono">Enter</kbd> open</span>
-          <span className="ml-auto"><kbd className="font-mono">g</kbd>+<kbd className="font-mono">n</kbd> notebook · <kbd className="font-mono">g</kbd>+<kbd className="font-mono">e</kbd> experiments</span>
+          <span className="ml-auto"><kbd className="font-mono">g</kbd>+<kbd className="font-mono">n</kbd> notes · <kbd className="font-mono">g</kbd>+<kbd className="font-mono">t</kbd> tasks</span>
         </div>
       </div>
     </div>

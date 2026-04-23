@@ -45,6 +45,8 @@ export function NotebookPage() {
   const [summaryError, setSummaryError] = useState('');
   const [expandedSummary, setExpandedSummary] = useState(true);
   const [showXPToast, setShowXPToast] = useState(false);
+  // Per-entry bullet summaries: { [obsId]: string[] | 'loading' | 'error' }
+  const [entryBullets, setEntryBullets] = useState<Record<string, string[] | 'loading' | 'error'>>({});
 
   const todayIso = new Date().toDateString();
   const todayCount = observations.filter(
@@ -86,6 +88,31 @@ export function NotebookPage() {
     if (editingId) await updateObservation(editingId, { text: editText.trim() });
     setEditingId(null);
     setEditText('');
+  };
+
+  const runEntryBullets = async (obsId: string, text: string) => {
+    // Toggle off if already showing
+    if (Array.isArray(entryBullets[obsId])) {
+      setEntryBullets((m) => { const n = { ...m }; delete n[obsId]; return n; });
+      return;
+    }
+    setEntryBullets((m) => ({ ...m, [obsId]: 'loading' }));
+    try {
+      const result = await api.chat([
+        {
+          role: 'user',
+          content: `Summarize the following note as 3–5 concise bullet points. Return only the bullet points, one per line, each starting with "• ". No intro text.\n\n${text}`,
+        },
+      ]);
+      const raw: string = result.reply || '';
+      const bullets = raw
+        .split('\n')
+        .map((l: string) => l.replace(/^[•\-*]\s*/, '').trim())
+        .filter((l: string) => l.length > 0);
+      setEntryBullets((m) => ({ ...m, [obsId]: bullets.length ? bullets : ['(No summary generated.)'] }));
+    } catch {
+      setEntryBullets((m) => ({ ...m, [obsId]: 'error' }));
+    }
   };
 
   const runSummary = async () => {
@@ -146,7 +173,7 @@ export function NotebookPage() {
           <textarea
             value={manualText}
             onChange={(e) => setManualText(e.target.value)}
-            placeholder="e.g., Cells look ~80% confluent. Splitting before adding drug."
+            placeholder="e.g., Met with supervisor — discussed progress on chapter 2, need to revise methodology section."
             className="w-full min-h-[80px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
             disabled={savingManual}
           />
@@ -252,9 +279,30 @@ export function NotebookPage() {
                           autoFocus
                         />
                       ) : (
-                        <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
-                          {obs.text}
-                        </p>
+                        <>
+                          <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                            {obs.text}
+                          </p>
+                          {/* Inline bullet summary */}
+                          {Array.isArray(entryBullets[obs.id]) && (
+                            <div className="mt-2 p-2.5 bg-learn-50 dark:bg-learn-950/20 border border-learn-200 dark:border-learn-900/40 rounded-xl">
+                              <p className="text-[10px] font-semibold text-learn-600 dark:text-learn-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" /> AI summary
+                              </p>
+                              <ul className="space-y-1">
+                                {(entryBullets[obs.id] as string[]).map((b, i) => (
+                                  <li key={i} className="text-xs text-slate-700 dark:text-slate-300 flex gap-1.5">
+                                    <span className="text-learn-500 mt-0.5 shrink-0">•</span>
+                                    {b}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {entryBullets[obs.id] === 'error' && (
+                            <p className="mt-1 text-xs text-red-400">Could not generate summary.</p>
+                          )}
+                        </>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -269,6 +317,21 @@ export function NotebookPage() {
                         </>
                       ) : (
                         <>
+                          <button
+                            onClick={() => runEntryBullets(obs.id, obs.text)}
+                            disabled={entryBullets[obs.id] === 'loading'}
+                            className={cn(
+                              'p-1.5 rounded-lg transition-colors',
+                              Array.isArray(entryBullets[obs.id])
+                                ? 'text-learn-600 bg-learn-50 dark:bg-learn-950/30'
+                                : 'text-slate-400 hover:text-learn-600 hover:bg-slate-100 dark:hover:bg-slate-800',
+                            )}
+                            title="Summarize as bullet points"
+                          >
+                            {entryBullets[obs.id] === 'loading'
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : <Sparkles className="w-4 h-4" />}
+                          </button>
                           <button onClick={() => startEdit(obs.id, obs.text)} className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Edit">
                             <Edit2 className="w-4 h-4" />
                           </button>
