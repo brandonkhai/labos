@@ -19,6 +19,7 @@ import {
   Search, Beaker, BookOpen, Upload, CheckSquare, Library, Home, User,
   FileText, Mic,
 } from 'lucide-react';
+
 import { useLab } from '@/src/lib/context';
 import { cn } from '@/src/lib/utils';
 
@@ -37,7 +38,7 @@ const NAV_ITEMS: Omit<Item, 'haystack'>[] = [
   { id: 'nav:/notes', label: 'Notes', icon: BookOpen, path: '/notes', group: 'Navigate' },
   { id: 'nav:/experiments', label: 'Experiments', icon: Beaker, path: '/experiments', group: 'Navigate' },
   { id: 'nav:/tasks', label: 'Tasks', icon: CheckSquare, path: '/tasks', group: 'Navigate' },
-  { id: 'nav:/library', label: 'Papers', icon: Library, path: '/library', group: 'Navigate' },
+  { id: 'nav:/library', label: 'Papers',  icon: Library,      path: '/library', group: 'Navigate' },
   { id: 'nav:/profile', label: 'Profile', icon: User, path: '/profile', group: 'Navigate' },
   { id: 'nav:/upload', label: 'New Experiment', icon: Upload, path: '/upload', group: 'Navigate' },
 ];

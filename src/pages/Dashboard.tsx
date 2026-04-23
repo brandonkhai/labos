@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Beaker, CheckSquare, BookMarked, ArrowRight, Flame, Zap } from 'lucide-react';
-import { useLab, levelName } from '@/src/lib/context';
+import { BookOpen, Beaker, CheckSquare, BookMarked, ArrowRight } from 'lucide-react';
+import { useLab } from '@/src/lib/context';
 import { cn } from '@/src/lib/utils';
 
 const DAILY_TIPS = [
@@ -63,11 +63,7 @@ function QuickActionCard({
 }
 
 export function Dashboard() {
-  const { profile, experiments, papers, observations, gamification } = useLab();
-
-  const { xp, streak, longestStreak } = gamification;
-  const level = Math.floor(xp / 100) + 1;
-  const xpInLevel = xp % 100;
+  const { profile, experiments, papers, observations } = useLab();
 
   const todayIso = new Date().toDateString();
   const todayNotes = observations.filter(
@@ -83,59 +79,25 @@ export function Dashboard() {
     <div className="space-y-5 animate-slide-up">
 
       {/* Greeting */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-900 text-slate-900 dark:text-slate-100">
-            Hey, {displayName}! 👋
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-        {streak > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-streak-500/10 to-xp-500/10 border border-streak-200 dark:border-streak-900/50">
-            <span className="text-2xl animate-streak-wiggle">🔥</span>
-            <div>
-              <p className="text-sm font-bold text-streak-600 dark:text-streak-400 leading-tight">
-                {streak}-day streak!
-              </p>
-              <p className="text-xs text-slate-400">Best: {longestStreak}</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* XP / Level bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-xp-500" />
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Level {level} · {levelName(level)}
-            </span>
-          </div>
-          <span className="text-sm font-bold text-xp-600 dark:text-xp-400">{xp} XP total</span>
-        </div>
-        <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-xp-400 to-xp-500 rounded-full transition-all duration-700"
-            style={{ width: `${xpInLevel}%` }}
-          />
-        </div>
-        <p className="text-xs text-slate-400 mt-1.5">{100 - xpInLevel} XP to level {level + 1}</p>
+      <div>
+        <h1 className="font-display text-3xl font-900 text-slate-900 dark:text-slate-100">
+          Welcome back, {displayName}.
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+          {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+        </p>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Notes today', value: todayNotes, emoji: '📝', color: 'text-sky-600' },
-          { label: 'Experiments', value: experiments.length, emoji: '🧪', color: 'text-coral-600' },
-          { label: 'Papers saved', value: papers.length, emoji: '📄', color: 'text-learn-600' },
+          { label: 'Notes today',  value: todayNotes,          color: 'text-sky-600 dark:text-sky-400' },
+          { label: 'Experiments',  value: experiments.length,  color: 'text-coral-500 dark:text-coral-400' },
+          { label: 'Papers saved', value: papers.length,       color: 'text-brand-600 dark:text-brand-400' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 text-center">
-            <div className="text-2xl mb-1">{stat.emoji}</div>
-            <div className={cn('text-2xl font-display font-900', stat.color)}>{stat.value}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{stat.label}</div>
+          <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+            <div className={cn('text-3xl font-display font-900', stat.color)}>{stat.value}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{stat.label}</div>
           </div>
         ))}
       </div>
@@ -149,34 +111,34 @@ export function Dashboard() {
           <QuickActionCard
             icon={BookOpen}
             label="Add a note"
-            sublabel="+10 XP"
+            sublabel="Voice or typed"
             to="/notes"
             colorClass="bg-sky-500"
-            bgClass="border-sky-100 bg-sky-50/60 dark:bg-sky-950/20 dark:border-sky-900/40"
+            bgClass="border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700"
           />
           <QuickActionCard
             icon={Beaker}
             label="Log experiment"
-            sublabel="+25 XP"
+            sublabel="Upload data & analyze"
             to="/experiments"
             colorClass="bg-coral-500"
-            bgClass="border-coral-100 bg-coral-50/60 dark:bg-coral-950/20 dark:border-coral-900/40"
+            bgClass="border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700"
           />
           <QuickActionCard
             icon={CheckSquare}
             label="My tasks"
-            sublabel="+15 XP per task done"
+            sublabel="Track what's next"
             to="/tasks"
             colorClass="bg-learn-500"
-            bgClass="border-learn-100 bg-learn-50/60 dark:bg-learn-950/20 dark:border-learn-900/40"
+            bgClass="border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700"
           />
           <QuickActionCard
             icon={BookMarked}
             label="Find a paper"
-            sublabel="+15 XP when saved"
+            sublabel="Search PubMed"
             to="/library"
             colorClass="bg-brand-500"
-            bgClass="border-brand-100 bg-brand-50/60 dark:bg-brand-950/20 dark:border-brand-900/40"
+            bgClass="border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700"
           />
         </div>
       </div>

@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, Search, ExternalLink, ChevronDown, ChevronUp, Loader2,
-  BookmarkPlus, BookmarkCheck, Trash2, Sparkles, Zap,
+  BookmarkPlus, BookmarkCheck, Trash2, Sparkles,
 } from 'lucide-react';
-import { useLab, XP } from '@/src/lib/context';
+import { useLab } from '@/src/lib/context';
 import { api, type PubmedSummary } from '@/src/lib/api';
 import { cn } from '@/src/lib/utils';
 
 type View = 'library' | 'search';
 
 export function LibraryPage() {
-  const { papers, profile, savePaper, removePaper, awardXP } = useLab();
+  const { papers, profile, savePaper, removePaper } = useLab();
   const [view, setView] = useState<View>('library');
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -72,7 +72,6 @@ export function LibraryPage() {
       } catch {}
     }
     await savePaper({ pmid: s.pmid, title: s.title, authors: s.authors, journal: s.journal, year: s.year, tags: [], url: s.url, abstract });
-    awardXP(XP.PAPER);
   };
 
   return (
@@ -80,11 +79,8 @@ export function LibraryPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-3xl font-900 text-slate-900 dark:text-slate-100">Papers</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-            Search PubMed & save papers.
-            <span className="flex items-center gap-0.5 text-xp-600 font-medium ml-1">
-              <Zap className="w-3.5 h-3.5" />+{XP.PAPER} XP per save
-            </span>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Search PubMed and save papers to your library.
           </p>
         </div>
         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">

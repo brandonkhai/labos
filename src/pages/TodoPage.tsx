@@ -1,23 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import {
-  CheckSquare, Square, Trash2, Plus, Loader2, Zap, CalendarDays, Flag,
+  CheckSquare, Square, Trash2, Plus, Loader2, CalendarDays, Flag,
 } from 'lucide-react';
 import { useLab, XP } from '@/src/lib/context';
 import { cn } from '@/src/lib/utils';
 
 type Filter = 'active' | 'done' | 'all';
-
-function XPToast({ visible }: { visible: boolean }) {
-  if (!visible) return null;
-  return (
-    <div className="fixed bottom-24 lg:bottom-6 right-4 z-50 animate-bounce-in">
-      <div className="flex items-center gap-2 px-4 py-2 bg-xp-500 text-white rounded-full shadow-lg font-bold text-sm">
-        <Zap className="w-4 h-4" />
-        +{XP.TODO} XP
-      </div>
-    </div>
-  );
-}
 
 export function TodoPage() {
   const { todos, addTodo, completeTodo, uncompleteTodo, deleteTodo, awardXP } = useLab();
@@ -27,12 +15,6 @@ export function TodoPage() {
   const [newPriority, setNewPriority] = useState<'normal' | 'high'>('normal');
   const [filter, setFilter] = useState<Filter>('active');
   const [saving, setSaving] = useState(false);
-  const [showXPToast, setShowXPToast] = useState(false);
-
-  const fireXPToast = () => {
-    setShowXPToast(true);
-    setTimeout(() => setShowXPToast(false), 2000);
-  };
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +40,6 @@ export function TodoPage() {
     } else {
       completeTodo(id);
       awardXP(XP.TODO);
-      fireXPToast();
     }
   };
 
@@ -83,17 +64,12 @@ export function TodoPage() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto animate-slide-up">
-      <XPToast visible={showXPToast} />
-
       {/* Header */}
       <div>
         <h1 className="font-display text-3xl font-900 text-slate-900 dark:text-slate-100">Tasks</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           {activeCount} remaining
-          {doneCount > 0 && <span className="ml-1 text-brand-600 font-medium">· {doneCount} done 🎉</span>}
-          <span className="flex items-center gap-0.5 text-xp-600 font-medium ml-2">
-            <Zap className="w-3.5 h-3.5" />+{XP.TODO} XP per completion
-          </span>
+          {doneCount > 0 && <span className="ml-1 text-brand-600 font-medium">· {doneCount} completed</span>}
         </p>
       </div>
 

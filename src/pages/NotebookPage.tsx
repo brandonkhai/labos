@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Mic, Trash2, Edit2, Check, X, Loader2, Sparkles, ChevronDown, ChevronUp, Zap,
+  Mic, Trash2, Edit2, Check, X, Loader2, Sparkles, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { VoiceButton } from '@/src/components/VoiceButton';
 import { useLab, XP } from '@/src/lib/context';
@@ -22,18 +22,6 @@ function formatDuration(sec?: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-function XPToast({ amount, visible }: { amount: number; visible: boolean }) {
-  if (!visible) return null;
-  return (
-    <div className="fixed bottom-24 lg:bottom-6 right-4 z-50 animate-bounce-in">
-      <div className="flex items-center gap-2 px-4 py-2 bg-xp-500 text-white rounded-full shadow-lg font-bold text-sm">
-        <Zap className="w-4 h-4" />
-        +{amount} XP
-      </div>
-    </div>
-  );
-}
-
 export function NotebookPage() {
   const { observations, profile, addObservation, updateObservation, removeObservation, awardXP } = useLab();
   const [manualText, setManualText] = useState('');
@@ -44,7 +32,6 @@ export function NotebookPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState('');
   const [expandedSummary, setExpandedSummary] = useState(true);
-  const [showXPToast, setShowXPToast] = useState(false);
   // Per-entry bullet summaries: { [obsId]: string[] | 'loading' | 'error' }
   const [entryBullets, setEntryBullets] = useState<Record<string, string[] | 'loading' | 'error'>>({});
 
@@ -53,16 +40,10 @@ export function NotebookPage() {
     (o) => new Date(o.createdAt).toDateString() === todayIso,
   ).length;
 
-  const fireXPToast = () => {
-    setShowXPToast(true);
-    setTimeout(() => setShowXPToast(false), 2000);
-  };
-
   const handleTranscribed = async (text: string, meta: { durationSec: number }) => {
     if (!text.trim()) return;
     await addObservation({ text: text.trim(), source: 'voice', durationSec: meta.durationSec });
     awardXP(XP.NOTE_ENTRY);
-    fireXPToast();
   };
 
   const handleManualSave = async (e: React.FormEvent) => {
@@ -73,7 +54,6 @@ export function NotebookPage() {
       await addObservation({ text: manualText.trim(), source: 'typed' });
       setManualText('');
       awardXP(XP.NOTE_ENTRY);
-      fireXPToast();
     } finally {
       setSavingManual(false);
     }
@@ -132,7 +112,6 @@ export function NotebookPage() {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto animate-slide-up">
-      <XPToast amount={XP.NOTE_ENTRY} visible={showXPToast} />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -161,8 +140,7 @@ export function NotebookPage() {
           label="Tap to start dictating"
         />
         <p className="text-xs text-slate-400 text-center max-w-sm">
-          Audio is transcribed with Gemini, then discarded. Only the text is saved.
-          <span className="ml-1 text-xp-600 font-medium">+{XP.NOTE_ENTRY} XP per entry</span>
+          Audio is transcribed, then discarded. Only the text is saved.
         </p>
       </div>
 

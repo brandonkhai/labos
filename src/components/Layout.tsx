@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Home, BookOpen, Beaker, CheckSquare, User, Menu, Search, X, Flame,
+  Home, BookOpen, Beaker, CheckSquare, User, Library, Menu, Search, X,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { useLab, levelName } from '@/src/lib/context';
+import { useLab } from '@/src/lib/context';
 
 function initialsOf(name?: string): string {
   if (!name) return '?';
@@ -19,7 +19,8 @@ const NAV_ITEMS = [
   { name: 'Notes',       path: '/notes',        icon: BookOpen,       color: 'text-sky-500' },
   { name: 'Experiments', path: '/experiments',  icon: Beaker,         color: 'text-coral-500' },
   { name: 'Tasks',       path: '/tasks',        icon: CheckSquare,    color: 'text-learn-500' },
-  { name: 'Profile',     path: '/profile',      icon: User,           color: 'text-brand-600' },
+  { name: 'Papers',      path: '/library',      icon: Library,        color: 'text-sky-500' },
+  { name: 'Profile',     path: '/profile',      icon: User,           color: 'text-slate-500' },
 ];
 
 function isActive(path: string, current: string): boolean {
@@ -29,12 +30,9 @@ function isActive(path: string, current: string): boolean {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { profile, gamification } = useLab();
+  const { profile } = useLab();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { xp, streak } = gamification;
-  const level = Math.floor(xp / 100) + 1;
-  const xpInLevel = xp % 100;
   const initials = initialsOf(profile?.user || profile?.name);
 
   const openPalette = () => window.dispatchEvent(new CustomEvent('labos:open-palette'));
@@ -75,22 +73,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* XP bar */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Level {level} · {levelName(level)}
-            </span>
-            <span className="text-xs font-semibold text-xp-600 dark:text-xp-400">{xp} XP</span>
-          </div>
-          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-xp-400 rounded-full transition-all duration-500"
-              style={{ width: `${xpInLevel}%` }}
-            />
-          </div>
-        </div>
-
         {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
@@ -119,16 +101,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Streak badge */}
-        {streak > 0 && (
-          <div className="mx-4 mb-4 p-3 bg-gradient-to-r from-streak-500/10 to-xp-500/10 border border-streak-200 dark:border-streak-900/40 rounded-2xl flex items-center gap-3">
-            <span className="text-2xl">🔥</span>
-            <div>
-              <p className="text-sm font-bold text-streak-600 dark:text-streak-400">{streak}-day streak</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Keep it going!</p>
-            </div>
-          </div>
-        )}
       </aside>
 
       {/* Dim overlay for mobile sidebar */}
@@ -156,19 +128,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </h2>
 
           <div className="ml-auto flex items-center gap-2">
-            {/* Streak (mobile) */}
-            {streak > 0 && (
-              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-streak-50 dark:bg-streak-900/30 border border-streak-200 dark:border-streak-800/50 text-streak-600 dark:text-streak-400">
-                <Flame className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold">{streak}</span>
-              </div>
-            )}
-
-            {/* XP pill */}
-            <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-xp-50 dark:bg-xp-900/20 border border-xp-200 dark:border-xp-800/40 text-xp-700 dark:text-xp-400">
-              <span className="text-xs font-bold">⚡ {xp} XP</span>
-            </div>
-
             {/* Search */}
             <button
               onClick={openPalette}

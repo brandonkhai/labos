@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Sun, Moon, Monitor, LogOut, Download, Upload, Trash2, Save, CheckCircle2, Zap, Flame,
+  User, Sun, Moon, Monitor, LogOut, Download, Upload, Trash2, Save, CheckCircle2,
 } from 'lucide-react';
-import { useLab, levelName, XP } from '@/src/lib/context';
+import { useLab } from '@/src/lib/context';
 import { api } from '@/src/lib/api';
 import { cn } from '@/src/lib/utils';
 
@@ -28,7 +28,7 @@ function Field({ label, children, hint, required }: {
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { profile, setProfile, gamification } = useLab();
+  const { profile, setProfile } = useLab();
 
   const [form, setForm] = useState({
     name: profile?.name || '',
@@ -46,9 +46,6 @@ export function SettingsPage() {
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
 
   const theme = (profile?.theme as 'light' | 'dark' | 'system' | undefined) || 'light';
-  const { xp, streak, longestStreak } = gamification;
-  const level = Math.floor(xp / 100) + 1;
-  const xpInLevel = xp % 100;
 
   const updateForm = (patch: Partial<typeof form>) => {
     setForm((f) => ({ ...f, ...patch }));
@@ -122,55 +119,8 @@ export function SettingsPage() {
       <div>
         <h1 className="font-display text-3xl font-900 text-slate-900 dark:text-slate-100">Profile</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Your account, workspace settings, and progress.
+          Your account and workspace settings.
         </p>
-      </div>
-
-      {/* ── Progress card ── */}
-      <div className="bg-gradient-to-r from-brand-50 to-xp-50 dark:from-brand-950/30 dark:to-xp-950/30 border border-brand-200 dark:border-brand-900/40 rounded-2xl p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center text-white font-display font-900 text-lg">
-            {level}
-          </div>
-          <div>
-            <p className="font-display font-800 text-slate-900 dark:text-slate-100 text-lg leading-tight">
-              {levelName(level)}
-            </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Level {level}</p>
-          </div>
-        </div>
-        <div className="h-2.5 bg-white/60 dark:bg-slate-900/40 rounded-full overflow-hidden mb-1">
-          <div
-            className="h-full bg-gradient-to-r from-xp-400 to-xp-500 rounded-full transition-all duration-700"
-            style={{ width: `${xpInLevel}%` }}
-          />
-        </div>
-        <p className="text-xs text-slate-500 mb-4">{xpInLevel}/100 XP to next level</p>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <div className="text-xl font-display font-900 text-xp-600 flex items-center justify-center gap-1">
-              <Zap className="w-4 h-4" />{xp}
-            </div>
-            <div className="text-xs text-slate-500">Total XP</div>
-          </div>
-          <div>
-            <div className="text-xl font-display font-900 text-streak-500 flex items-center justify-center gap-1">
-              <Flame className="w-4 h-4" />{streak}
-            </div>
-            <div className="text-xs text-slate-500">Day streak</div>
-          </div>
-          <div>
-            <div className="text-xl font-display font-900 text-slate-700 dark:text-slate-300">
-              {longestStreak}
-            </div>
-            <div className="text-xs text-slate-500">Best streak</div>
-          </div>
-        </div>
-        <div className="mt-3 pt-3 border-t border-white/40 dark:border-slate-700/40">
-          <p className="text-xs text-slate-500 text-center">
-            +{XP.NOTE_ENTRY} XP note · +{XP.EXPERIMENT} XP experiment · +{XP.PAPER} XP paper
-          </p>
-        </div>
       </div>
 
       {/* ── Account ── */}
