@@ -40,8 +40,6 @@ const NAV_ITEMS: Omit<Item, 'haystack'>[] = [
   { id: 'nav:/library', label: 'Papers', icon: Library, path: '/library', group: 'Navigate' },
   { id: 'nav:/profile', label: 'Profile', icon: User, path: '/profile', group: 'Navigate' },
   { id: 'nav:/upload', label: 'New Experiment', icon: Upload, path: '/upload', group: 'Navigate' },
-  { id: 'nav:/library', label: 'Library', icon: Library, path: '/library', group: 'Navigate' },
-  { id: 'nav:/settings', label: 'Settings', icon: Settings, path: '/settings', group: 'Navigate' },
 ];
 
 function score(item: Item, q: string): number {
