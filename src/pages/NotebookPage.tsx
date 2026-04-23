@@ -5,9 +5,10 @@ import {
   CheckSquare, Search,
 } from 'lucide-react';
 import { VoiceButton } from '@/src/components/VoiceButton';
-import { useLab, XP } from '@/src/lib/context';
+import { useLab } from '@/src/lib/context';
 import { api, type NotebookSummary } from '@/src/lib/api';
 import { cn } from '@/src/lib/utils';
+import { Markdown } from '@/src/components/Markdown';
 
 // ─── Smart note action parser (client-side, no API call) ─────────────────────
 
@@ -150,7 +151,7 @@ function NoteActionSuggestions({ actions, onAddTask, onSearchPaper, onDismiss }:
 
 export function NotebookPage() {
   const navigate = useNavigate();
-  const { observations, profile, addObservation, updateObservation, removeObservation, addTodo, awardXP } = useLab();
+  const { observations, profile, addObservation, updateObservation, removeObservation, addTodo } = useLab();
   const [manualText, setManualText] = useState('');
   const [savingManual, setSavingManual] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -177,7 +178,6 @@ export function NotebookPage() {
   const handleTranscribed = async (text: string, meta: { durationSec: number }) => {
     if (!text.trim()) return;
     await addObservation({ text: text.trim(), source: 'voice', durationSec: meta.durationSec });
-    awardXP(XP.NOTE_ENTRY);
     triggerActionAnalysis(text);
   };
 
@@ -189,7 +189,6 @@ export function NotebookPage() {
     try {
       await addObservation({ text: saved, source: 'typed' });
       setManualText('');
-      awardXP(XP.NOTE_ENTRY);
       triggerActionAnalysis(saved);
     } finally {
       setSavingManual(false);
@@ -333,7 +332,7 @@ export function NotebookPage() {
           </div>
           {expandedSummary && (
             <div className="text-sm text-slate-700 dark:text-slate-300 space-y-3">
-              <p>{summary.summary}</p>
+              <Markdown className="text-sm text-slate-700 dark:text-slate-300">{summary.summary}</Markdown>
               {summary.openQuestions?.length > 0 && (
                 <div>
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Open questions</p>

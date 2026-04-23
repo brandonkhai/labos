@@ -9,6 +9,7 @@ import { MessageCircle, X, Send, Loader2, ChevronDown, RotateCcw } from 'lucide-
 import { useLab } from '@/src/lib/context';
 import { api } from '@/src/lib/api';
 import { cn } from '@/src/lib/utils';
+import { Markdown } from './Markdown';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -153,12 +154,14 @@ export function AskLabOS() {
               messages.map((m, i) => (
                 <div key={i} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className={cn(
-                    'max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
+                    'max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
                     m.role === 'user'
-                      ? 'bg-brand-500 text-white rounded-br-sm'
+                      ? 'bg-brand-500 text-white rounded-br-sm whitespace-pre-wrap'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-sm',
                   )}>
-                    {m.content}
+                    {m.role === 'assistant'
+                      ? <Markdown className="text-sm text-slate-800 dark:text-slate-200">{m.content}</Markdown>
+                      : m.content}
                   </div>
                 </div>
               ))

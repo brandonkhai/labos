@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
-import { Button } from '@/src/components/ui/button';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, BarChart, Bar,
 } from 'recharts';
 import {
-  AlertCircle, CheckCircle2, ArrowRight, MessageSquare, Lightbulb, Send, Loader2,
-  Download, FileText, Trash2,
+  AlertCircle, Lightbulb, Send, Loader2,
+  Download, FileText, Trash2, ArrowLeft, CheckCircle2,
 } from 'lucide-react';
 import { useLab } from '@/src/lib/context';
 import { api } from '@/src/lib/api';
 import { VoiceButton } from '@/src/components/VoiceButton';
+import { Markdown } from '@/src/components/Markdown';
 import { exportExperimentJson, exportExperimentPdf } from '@/src/lib/exportExperiment';
-import { useNavigate } from 'react-router-dom';
+import { cn } from '@/src/lib/utils';
 
-const FALLBACK_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7'];
+const FALLBACK_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7'];
 
 type ChatMsg = { role: 'user' | 'assistant'; content: string };
 
@@ -32,13 +32,14 @@ export function ExperimentDetail() {
 
   if (!experiment) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-16 space-y-3">
-        <h2 className="text-xl font-semibold text-slate-800">Experiment not found</h2>
-        <p className="text-slate-500 text-sm">
-          This experiment may have been deleted, or you're opening a link from an older session.
+      <div className="max-w-2xl mx-auto text-center py-20 space-y-3">
+        <p className="text-slate-400 text-4xl mb-4">🔬</p>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Experiment not found</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm">
+          This experiment may have been deleted or the link is stale.
         </p>
-        <Link to="/experiments" className="text-indigo-600 text-sm hover:underline">
-          Back to experiments
+        <Link to="/experiments" className="inline-flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:underline mt-2">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to experiments
         </Link>
       </div>
     );
@@ -56,19 +57,25 @@ export function ExperimentDetail() {
     const DataComponent: any = chartConfig.type === 'bar' ? Bar : Line;
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">AI-generated visualization</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[320px] w-full">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Visualization</p>
+        </div>
+        <div className="p-5">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ChartComponent data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+              <ChartComponent data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey={chartConfig.xAxisKey} stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
-                <Legend verticalAlign="top" height={36} />
+                <XAxis dataKey={chartConfig.xAxisKey} stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend verticalAlign="top" height={32} iconType="circle" />
                 {(chartConfig.series || []).map((s: any, i: number) => (
                   <DataComponent
                     key={s.dataKey || i}
@@ -86,8 +93,8 @@ export function ExperimentDetail() {
               </ChartComponent>
             </ResponsiveContainer>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   };
 
@@ -124,205 +131,236 @@ export function ExperimentDetail() {
       });
       setChat([...next, { role: 'assistant', content: reply }]);
     } catch (err: any) {
-      setChat([...next, { role: 'assistant', content: `Sorry — the model call failed: ${err?.message || err}` }]);
+      setChat([...next, { role: 'assistant', content: `Request failed: ${err?.message || err}` }]);
     } finally {
       setAsking(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
-              {experiment.id}: {experiment.name}
-            </h1>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
-                experiment.status === 'Analyzed'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-              }`}
-            >
-              <CheckCircle2 className="w-3 h-3" />
-              {experiment.status}
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {[experiment.type, experiment.model, experiment.date, experiment.researcher]
-              .filter(Boolean)
-              .join(' • ')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => {
-              const related = observations.filter((o) => o.experimentId === experiment.id);
-              exportExperimentPdf(experiment, related, { labName: profile?.name, user: profile?.user });
-            }}
-            title="Open a print view to save as PDF"
-          >
-            <FileText className="w-4 h-4" />
-            PDF
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => {
-              const related = observations.filter((o) => o.experimentId === experiment.id);
-              exportExperimentJson(experiment, related);
-            }}
-          >
-            <Download className="w-4 h-4" />
-            JSON
-          </Button>
-          {!confirmingDelete ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-400 hover:text-red-600 gap-1.5"
-              onClick={() => setConfirmingDelete(true)}
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)}>
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={async () => {
-                  await removeExperiment(experiment.id);
-                  navigate('/experiments');
-                }}
+    <div className="space-y-5 max-w-5xl mx-auto pb-12">
+
+      {/* ── Header ── */}
+      <div>
+        <Link
+          to="/experiments"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 mb-3 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> All experiments
+        </Link>
+
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 truncate">
+                {experiment.name}
+              </h1>
+              <span
+                className={cn(
+                  'px-2 py-0.5 rounded-md text-xs font-medium flex items-center gap-1 shrink-0',
+                  experiment.status === 'Analyzed'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                )}
               >
-                Confirm delete
-              </Button>
-            </>
-          )}
+                <CheckCircle2 className="w-3 h-3" />
+                {experiment.status}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+              {[experiment.id, experiment.type, experiment.model, experiment.date, experiment.researcher]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => {
+                const related = observations.filter((o) => o.experimentId === experiment.id);
+                exportExperimentPdf(experiment, related, { labName: profile?.name, user: profile?.user });
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              title="Save as PDF"
+            >
+              <FileText className="w-3.5 h-3.5" /> PDF
+            </button>
+            <button
+              onClick={() => {
+                const related = observations.filter((o) => o.experimentId === experiment.id);
+                exportExperimentJson(experiment, related);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" /> JSON
+            </button>
+            {!confirmingDelete ? (
+              <button
+                onClick={() => setConfirmingDelete(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="px-3 py-1.5 rounded-lg text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => { await removeExperiment(experiment.id); navigate('/experiments'); }}
+                  className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">AI analysis narrative</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm prose-slate max-w-none whitespace-pre-wrap">
-                {hasAnalysis
-                  ? (analysis.narrative || 'The model returned no narrative for this run.')
-                  : 'No analysis attached to this experiment yet.'}
-              </div>
-            </CardContent>
-          </Card>
+      {/* ── Main layout ── */}
+      <div className="grid gap-5 md:grid-cols-3">
+
+        {/* Left column: narrative + chart */}
+        <div className="md:col-span-2 space-y-5">
+
+          {/* AI narrative */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">AI analysis</p>
+              {hasAnalysis && (
+                <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+                  Gemini · gemini-2.5-flash
+                </span>
+              )}
+            </div>
+            <div className="p-5">
+              {hasAnalysis ? (
+                <Markdown className="text-sm text-slate-700 dark:text-slate-300">
+                  {analysis.narrative || 'No narrative returned for this run.'}
+                </Markdown>
+              ) : (
+                <p className="text-sm text-slate-400 dark:text-slate-500 italic">
+                  No analysis attached yet. Upload data from the Experiments list to run a full analysis.
+                </p>
+              )}
+            </div>
+          </div>
 
           {renderChart()}
         </div>
 
-        <div className="space-y-6">
-          <Card className="border-amber-200 bg-amber-50/50">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2 text-amber-700">
-                <AlertCircle className="w-5 h-5" />
-                <CardTitle className="text-base">QC &amp; statistical flags</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
+        {/* Right column: flags, next steps, chat */}
+        <div className="space-y-5">
+
+          {/* QC flags */}
+          <div className={cn(
+            'rounded-xl border overflow-hidden',
+            Array.isArray(analysis?.qcFlags) && analysis.qcFlags.length > 0
+              ? 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20'
+              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900',
+          )}>
+            <div className="px-4 py-3 border-b border-amber-200/70 dark:border-amber-800/30 flex items-center gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                QC flags
+              </p>
+            </div>
+            <div className="p-4">
               {Array.isArray(analysis?.qcFlags) && analysis.qcFlags.length > 0 ? (
-                <ul className="space-y-3 text-sm text-amber-900">
+                <ul className="space-y-2.5">
                   {analysis.qcFlags.map((flag: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                      <p
-                        dangerouslySetInnerHTML={{
-                          __html: flag.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
-                        }}
-                      />
+                    <li key={idx} className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-200">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                      <Markdown className="text-sm text-amber-900 dark:text-amber-200">
+                        {flag}
+                      </Markdown>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-amber-900/80">No QC flags raised.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 italic">No flags raised.</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2 text-indigo-700">
-                <Lightbulb className="w-5 h-5" />
-                <CardTitle className="text-base">Suggested next steps</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
+          {/* Next steps */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+              <Lightbulb className="w-3.5 h-3.5 text-brand-500" />
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Next steps
+              </p>
+            </div>
+            <div className="p-4">
               {Array.isArray(analysis?.nextSteps) && analysis.nextSteps.length > 0 ? (
-                <div className="space-y-4">
+                <ol className="space-y-3">
                   {analysis.nextSteps.map((step: string, idx: number) => (
-                    <div key={idx} className="space-y-1">
-                      <p className="text-sm font-medium text-slate-900">Step {idx + 1}</p>
-                      <p className="text-xs text-slate-600">{step}</p>
+                    <li key={idx} className="flex gap-3 text-sm">
+                      <span className="text-[11px] font-bold text-slate-300 dark:text-slate-600 font-mono mt-0.5 w-4 shrink-0">
+                        {idx + 1}
+                      </span>
+                      <Markdown className="text-sm text-slate-600 dark:text-slate-400">{step}</Markdown>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+                  No suggestions generated.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Experiment chat */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Ask about this experiment
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              {chat.length === 0 ? (
+                <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+                  Ask anything — the model has this experiment's data, metadata, and your saved papers.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {chat.map((m, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        'text-xs rounded-lg px-3 py-2.5',
+                        m.role === 'user'
+                          ? 'bg-brand-500 text-white ml-6'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
+                      )}
+                    >
+                      {m.role === 'assistant' ? (
+                        <Markdown className="text-xs text-slate-700 dark:text-slate-300">
+                          {m.content}
+                        </Markdown>
+                      ) : (
+                        <span className="whitespace-pre-wrap">{m.content}</span>
+                      )}
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-sm text-slate-500">No next-step suggestions.</p>
               )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2 text-slate-700">
-                <MessageSquare className="w-5 h-5" />
-                <CardTitle className="text-base">Ask LabOS</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {chat.length === 0 ? (
-                  <p className="text-xs text-slate-500">
-                    Ask anything about this analysis — the model has the data, your metadata, and
-                    saved papers as context.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {chat.map((m, i) => (
-                      <div
-                        key={i}
-                        className={`text-xs p-2 rounded-md ${
-                          m.role === 'user'
-                            ? 'bg-indigo-50 text-indigo-900'
-                            : 'bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <span className="font-semibold mr-1">
-                          {m.role === 'user' ? 'You:' : 'LabOS:'}
-                        </span>
-                        <span className="whitespace-pre-wrap">{m.content}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <form onSubmit={sendChat} className="relative">
+              <form onSubmit={sendChat} className="flex gap-1.5">
+                <div className="flex-1 relative">
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type or dictate a question…"
+                    placeholder="Ask a question…"
                     disabled={asking}
-                    className="w-full h-9 px-3 pr-16 rounded-md border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-8 pl-3 pr-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-400 transition"
                   />
-                  <div className="absolute right-1 top-1 flex items-center gap-0.5">
+                  <div className="absolute right-0.5 top-0.5">
                     <VoiceButton
                       compact
                       hint={profile?.focus}
@@ -332,22 +370,22 @@ export function ExperimentDetail() {
                         setInput((prev) => (prev ? `${prev} ${text}` : text))
                       }
                     />
-                    <button
-                      type="submit"
-                      disabled={asking || !input.trim()}
-                      className="w-7 h-7 flex items-center justify-center rounded-md text-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
-                    >
-                      {asking ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </button>
                   </div>
-                </form>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+                <button
+                  type="submit"
+                  disabled={asking || !input.trim()}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-40 transition-colors shrink-0"
+                >
+                  {asking ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
