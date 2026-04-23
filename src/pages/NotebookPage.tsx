@@ -1,11 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Mic, Trash2, Edit2, Check, X, Loader2, Sparkles, ChevronDown, ChevronUp,
+  CheckSquare, Search,
 } from 'lucide-react';
 import { VoiceButton } from '@/src/components/VoiceButton';
 import { useLab, XP } from '@/src/lib/context';
 import { api, type NotebookSummary } from '@/src/lib/api';
 import { cn } from '@/src/lib/utils';
+
+// ─── Smart note action parser (client-side, no extra API call) ────────────────
+
+type NoteAction =
+  | { type: 'task'; text: string }
+  | { type: 'paper'; query: string };
+
+function analyzeNoteForActions(text: string): NoteAction[] {
+  const actions: NoteAction[] = [];
+  const seen = new Set<string>();
+
+  const add = (a: NoteAction) => {
+    const key = a.type + ':' + (a.type === 'task' ? a.text : a.query);
+    if (!seen.has(key)) { seen.add(key); actions.push(a); }
+  };
+
+  // Split into sentences
+  const sentences = text.split(/(?<=[.!?\n])\s+/).flatMap(s => s.split('\n')).map(s => s.trim()).filter(Boolean);
+
+  const TASK_TRIGGERS = [
+    /\b(need to|needs to|must|should|have to|has to|don't forget|remember to|plan to|going to|will)\b/i,
+    /\bask\s+(pi|supervisor|advisor|dr\.?|professor|my|the)\b/i,
+    /\bby\s+(tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next\s+week|end\s+of\s+(the\s+)?week|eow)\b/i,
+    /\b(todo|to-do|action item|follow[- ]?up)\b/i,
+    /\bschedule\s+(a|the|meeting|session|call)\b/i,
+    /\bsubmit\b/i,
+  ];
+
+  for (const sentence of sentences) {
+    if (sentence.length < 8 || sentence.length > 300) continue;
+    if (TASK_TRIGGERS.some(p => p.test(sentence))) {
+      let task = sentence.replace(/^[-•*]\s*/, '').replace(/[.!?]$/, '').trim();
+      task = task.charAt(0).toUpperCase() + task.slice(1);
+      if (task.length >= 10) add({ type: 'task', text: task });
+    }
+  }
+
+  // "X et al. YYYY" → paper search
+  const etAl = /([A-Z][a-z]+(?:\s*(?:and|&|,)\s*[A-Z][a-z]+)?)\s+et\s+al\.?\s*[\(\[]?(\d{4})[\)\]]?/g;
+  let m: RegExpExecArray | null;
+  while ((m = etAl.exec(text)) !== null) {
+    add({ type: 'paper', query: `${m[1]} ${m[2]}` });
+  }
+
+  // "read / look up / find the X paper/study/review"
+  const paperPhrase = /(?:read|look\s+up|find|check\s+out|search\s+for)\s+(?:the\s+)?["']?([^"'.!?\n]{5,60}?)["']?\s+(?:paper|study|article|review)\b/gi;
+  while ((m = paperPhrase.exec(text)) !== null) {
+    add({ type: 'paper', query: m[1].trim() });
+  }
+
+  return actions.slice(0, 4); // cap at 4 suggestions
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatTime(iso: string) {
   try {
@@ -22,8 +78,76 @@ function formatDuration(sec?: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
+// ─── Note Action Popup ────────────────────────────────────────────────────────
+
+function NoteActionPopup({ actions, onAddTask, onSearchPaper, onDismiss }: {
+  actions: NoteAction[];
+  onAddTask: (text: string, index: number) => void;
+  onSearchPaper: (query: string) => void;
+  onDismiss: () => void;
+}) {
+  // Auto-dismiss after 12 seconds if untouched
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 12000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-24 lg:bottom-8 left-4 right-16 lg:left-auto lg:right-80 lg:max-w-sm z-50 animate-slide-up">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+            Suggested from your note
+          </p>
+          <button onClick={onDismiss} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {actions.map((action, i) => (
+            <div key={i} className="flex items-start gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+              {action.type === 'task' ? (
+                <>
+                  <CheckSquare className="w-4 h-4 text-learn-500 shrink-0 mt-0.5" />
+                  <p className="flex-1 text-xs text-slate-700 dark:text-slate-200 leading-snug min-w-0">{action.text}</p>
+                  <button
+                    onClick={() => onAddTask(action.text, i)}
+                    className="shrink-0 text-xs px-2.5 py-1 rounded-lg bg-learn-500 hover:bg-learn-600 text-white font-semibold transition-colors"
+                  >
+                    Add task
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mb-0.5">PubMed</p>
+                    <p className="text-xs text-slate-700 dark:text-slate-200 leading-snug font-medium truncate">{action.query}</p>
+                  </div>
+                  <button
+                    onClick={() => onSearchPaper(action.query)}
+                    className="shrink-0 text-xs px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold transition-colors"
+                  >
+                    Search
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export function NotebookPage() {
-  const { observations, profile, addObservation, updateObservation, removeObservation, awardXP } = useLab();
+  const navigate = useNavigate();
+  const { observations, profile, addObservation, updateObservation, removeObservation, addTodo, awardXP } = useLab();
   const [manualText, setManualText] = useState('');
   const [savingManual, setSavingManual] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -32,28 +156,39 @@ export function NotebookPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState('');
   const [expandedSummary, setExpandedSummary] = useState(true);
-  // Per-entry bullet summaries: { [obsId]: string[] | 'loading' | 'error' }
+  // Per-entry bullet summaries
   const [entryBullets, setEntryBullets] = useState<Record<string, string[] | 'loading' | 'error'>>({});
+  // Smart action popup
+  const [pendingActions, setPendingActions] = useState<NoteAction[]>([]);
 
   const todayIso = new Date().toDateString();
   const todayCount = observations.filter(
     (o) => new Date(o.createdAt).toDateString() === todayIso,
   ).length;
 
+  // Trigger action analysis after saving a note
+  const triggerActionAnalysis = (text: string) => {
+    const actions = analyzeNoteForActions(text);
+    if (actions.length > 0) setPendingActions(actions);
+  };
+
   const handleTranscribed = async (text: string, meta: { durationSec: number }) => {
     if (!text.trim()) return;
     await addObservation({ text: text.trim(), source: 'voice', durationSec: meta.durationSec });
     awardXP(XP.NOTE_ENTRY);
+    triggerActionAnalysis(text);
   };
 
   const handleManualSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualText.trim()) return;
     setSavingManual(true);
+    const saved = manualText.trim();
     try {
-      await addObservation({ text: manualText.trim(), source: 'typed' });
+      await addObservation({ text: saved, source: 'typed' });
       setManualText('');
       awardXP(XP.NOTE_ENTRY);
+      triggerActionAnalysis(saved);
     } finally {
       setSavingManual(false);
     }
@@ -70,25 +205,15 @@ export function NotebookPage() {
     setEditText('');
   };
 
+  // Per-entry AI bullet summary using the dedicated fast endpoint
   const runEntryBullets = async (obsId: string, text: string) => {
-    // Toggle off if already showing
     if (Array.isArray(entryBullets[obsId])) {
       setEntryBullets((m) => { const n = { ...m }; delete n[obsId]; return n; });
       return;
     }
     setEntryBullets((m) => ({ ...m, [obsId]: 'loading' }));
     try {
-      const result = await api.chat([
-        {
-          role: 'user',
-          content: `Summarize the following note as 3–5 concise bullet points. Return only the bullet points, one per line, each starting with "• ". No intro text.\n\n${text}`,
-        },
-      ]);
-      const raw: string = result.reply || '';
-      const bullets = raw
-        .split('\n')
-        .map((l: string) => l.replace(/^[•\-*]\s*/, '').trim())
-        .filter((l: string) => l.length > 0);
+      const { bullets } = await api.bulletSummary(text);
       setEntryBullets((m) => ({ ...m, [obsId]: bullets.length ? bullets : ['(No summary generated.)'] }));
     } catch {
       setEntryBullets((m) => ({ ...m, [obsId]: 'error' }));
@@ -110,8 +235,29 @@ export function NotebookPage() {
     }
   };
 
+  // Popup action handlers
+  const handleAddTask = (text: string, index: number) => {
+    addTodo({ text, priority: 'normal' });
+    setPendingActions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSearchPaper = (query: string) => {
+    setPendingActions([]);
+    navigate('/library', { state: { query } });
+  };
+
   return (
     <div className="space-y-4 max-w-3xl mx-auto animate-slide-up">
+
+      {/* Smart action popup */}
+      {pendingActions.length > 0 && (
+        <NoteActionPopup
+          actions={pendingActions}
+          onAddTask={handleAddTask}
+          onSearchPaper={handleSearchPaper}
+          onDismiss={() => setPendingActions([])}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -146,12 +292,12 @@ export function NotebookPage() {
 
       {/* Typed entry */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Or type an observation</p>
+        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Or type a note</p>
         <form onSubmit={handleManualSave} className="flex flex-col gap-3">
           <textarea
             value={manualText}
             onChange={(e) => setManualText(e.target.value)}
-            placeholder="e.g., Met with supervisor — discussed progress on chapter 2, need to revise methodology section."
+            placeholder="e.g., Met with supervisor — need to revise methodology by Friday. She mentioned the Walker 2017 paper."
             className="w-full min-h-[80px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
             disabled={savingManual}
           />
@@ -162,7 +308,7 @@ export function NotebookPage() {
               className="flex items-center gap-2 px-5 py-2 rounded-full bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold disabled:opacity-50 transition-colors"
             >
               {savingManual ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Save entry
+              Save note
             </button>
           </div>
         </form>
@@ -215,12 +361,12 @@ export function NotebookPage() {
       {/* Entries feed */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">All entries</p>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">All notes</p>
         </div>
         {observations.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-3xl mb-3">📝</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">No entries yet. Tap the mic above or type one.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No notes yet. Tap the mic above or type one.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">

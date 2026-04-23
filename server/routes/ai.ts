@@ -154,17 +154,17 @@ aiRouter.post('/chat', async (req, res, next) => {
     const ai = getClient();
 
     const systemPreamble = `
-You are LabOS, a research assistant for a biomedical lab. You have access
-to the user's recent experiments, saved papers, and lab profile via the
-context block below. Be rigorous: cite specific numbers from the data
-when you can, call out limitations honestly, and when you rely on
-general biomedical knowledge make that clear rather than pretending it
-came from the lab's own data.
+You are LabOS, a research assistant for a junior researcher. You have access
+to the user's experiments, notes, tasks, saved papers, and profile via the
+context block below.
 
-When asked to explain things, match the user's apparent level — a
-first-year trainee and a senior PI need different phrasings.
+Be rigorous: cite specific details from the data when you can, call out
+limitations honestly, and when you rely on general knowledge rather than
+the user's own data, say so clearly. Keep replies concise and practical —
+this researcher is busy. Match your explanations to their apparent level
+and field of study.
 
-Context:
+Context (their actual workspace data):
 ${JSON.stringify(context || {}, null, 2)}
 `.trim();
 
@@ -249,6 +249,33 @@ aiRouter.post('/transcribe', async (req, res, next) => {
     });
 
     res.json({ text: (response.text || '').trim() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- /bullet-summary ----------
+// Fast, purpose-built endpoint for summarizing a single note entry as bullets.
+// Uses MODEL_FAST (not the chat model) — this is why the old approach failed.
+aiRouter.post('/bullet-summary', async (req, res, next) => {
+  try {
+    const { text } = req.body || {};
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'Provide text (string).' });
+    }
+    const ai = getClient();
+    const response = await ai.models.generateContent({
+      model: MODEL_FAST,
+      contents: `Summarize the following note as 3 to 5 concise bullet points. Return ONLY a JSON array of strings — no prose, no markdown fences, no extra keys.\n\nExample output: ["Point one.", "Point two.", "Point three."]\n\nNote to summarize:\n${text.slice(0, 2000)}`,
+      config: { responseMimeType: 'application/json', temperature: 0.2 },
+    });
+    const raw = safeParseJSON(response.text || '');
+    const bullets: string[] = Array.isArray(raw)
+      ? raw.filter((x: any) => typeof x === 'string')
+      : Array.isArray(raw?.bullets)
+        ? raw.bullets
+        : [];
+    res.json({ bullets: bullets.length ? bullets : ['Could not generate summary.'] });
   } catch (err) {
     next(err);
   }

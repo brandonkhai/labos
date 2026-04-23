@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   FileText, Search, ExternalLink, ChevronDown, ChevronUp, Loader2,
   BookmarkPlus, BookmarkCheck, Trash2, Sparkles,
@@ -11,6 +12,7 @@ type View = 'library' | 'search';
 
 export function LibraryPage() {
   const { papers, profile, savePaper, removePaper } = useLab();
+  const location = useLocation();
   const [view, setView] = useState<View>('library');
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -19,9 +21,34 @@ export function LibraryPage() {
   const [fetchingAbstract, setFetchingAbstract] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const didAutoSearch = useRef(false);
 
+  // If navigated here from a note action, pre-load the query and auto-search
   useEffect(() => {
-    if (!query && profile?.focus) {
+    const navQuery = (location.state as any)?.query as string | undefined;
+    if (navQuery && !didAutoSearch.current) {
+      didAutoSearch.current = true;
+      setQuery(navQuery);
+      setView('search');
+      // Run the search automatically
+      const run = async () => {
+        setSearching(true);
+        setError('');
+        setResults([]);
+        try {
+          const { summaries } = await api.pubmedSearch(navQuery, 20);
+          setResults(summaries);
+          if (summaries.length === 0) setError('No matches. Try different keywords.');
+        } catch (err: any) {
+          setError(err?.message || 'PubMed search failed.');
+        } finally {
+          setSearching(false);
+        }
+      };
+      run();
+      return;
+    }
+    if (!query && profile?.focus && !didAutoSearch.current) {
       const words = profile.focus.split(/\s+/).slice(0, 5).join(' ');
       setQuery(words);
     }

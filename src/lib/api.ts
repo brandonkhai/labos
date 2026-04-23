@@ -212,6 +212,13 @@ export const api = {
       body: JSON.stringify({ entries, labFocus }),
     }),
 
+  /** Summarize a single note entry as 3–5 bullet points. Uses fast model. */
+  bulletSummary: (text: string) =>
+    request<{ bullets: string[] }>('/api/ai/bullet-summary', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+
   /** Nuke the saved workspace (useful for a future "reset" action). */
   clearAll: () => localAsync(() => local.clearAll()),
 };

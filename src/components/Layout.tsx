@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useLab } from '@/src/lib/context';
+import { AskLabOS } from './AskLabOS';
 
 function initialsOf(name?: string): string {
   if (!name) return '?';
@@ -156,6 +157,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-auto p-4 pb-24 lg:pb-6">
           <div className="max-w-5xl mx-auto">{children}</div>
         </div>
+
+        {/* ── Ask LabOS floating chat ────────────────────── */}
+        <AskLabOS />
 
         {/* ── Bottom tab bar (mobile only) ─────────────── */}
         <nav className="lg:hidden fixed bottom-0 inset-x-0 h-16 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 z-20">
