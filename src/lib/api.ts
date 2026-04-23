@@ -118,7 +118,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try { body = JSON.parse(text); } catch { body = { error: text }; }
   }
   if (!resp.ok) {
-    throw new Error(body?.error || `${resp.status} ${resp.statusText}`);
+    // Extract a clean human-readable message from potentially nested error shapes.
+    // Gemini SDK errors can come back as { error: "...JSON string..." } where the
+    // JSON string itself contains { code, message, status }.
+    let message: string = `${resp.status} ${resp.statusText}`;
+    const raw = body?.error;
+    if (typeof raw === 'string') {
+      // Try to pull the inner .message field out of a stringified JSON error.
+      try {
+        const inner = JSON.parse(raw);
+        message = inner?.error?.message || inner?.message || raw;
+      } catch {
+        message = raw;
+      }
+    } else if (typeof raw === 'object' && raw !== null) {
+      message = raw?.message || JSON.stringify(raw);
+    }
+
+    // Map known status codes to friendlier descriptions.
+    if (resp.status === 503) {
+      message = 'Gemini is overloaded right now — the request was retried automatically but still failed. Try again in a moment.';
+    } else if (resp.status === 429) {
+      message = 'API rate limit reached. Wait a minute then try again.';
+    } else if (resp.status === 400 && message.includes('GEMINI_API_KEY')) {
+      message = 'No Gemini API key is set on the server. Add GEMINI_API_KEY to your .env file.';
+    }
+
+    throw new Error(message);
   }
   return body as T;
 }
