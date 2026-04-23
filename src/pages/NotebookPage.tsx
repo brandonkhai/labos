@@ -9,7 +9,7 @@ import { useLab, XP } from '@/src/lib/context';
 import { api, type NotebookSummary } from '@/src/lib/api';
 import { cn } from '@/src/lib/utils';
 
-// ─── Smart note action parser (client-side, no extra API call) ────────────────
+// ─── Smart note action parser (client-side, no API call) ─────────────────────
 
 type NoteAction =
   | { type: 'task'; text: string }
@@ -24,8 +24,11 @@ function analyzeNoteForActions(text: string): NoteAction[] {
     if (!seen.has(key)) { seen.add(key); actions.push(a); }
   };
 
-  // Split into sentences
-  const sentences = text.split(/(?<=[.!?\n])\s+/).flatMap(s => s.split('\n')).map(s => s.trim()).filter(Boolean);
+  // Split into individual sentences, handling multiple delimiters
+  const sentences = text
+    .split(/[.!?\n]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 8 && s.length <= 300);
 
   const TASK_TRIGGERS = [
     /\b(need to|needs to|must|should|have to|has to|don't forget|remember to|plan to|going to|will)\b/i,
@@ -33,32 +36,31 @@ function analyzeNoteForActions(text: string): NoteAction[] {
     /\bby\s+(tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next\s+week|end\s+of\s+(the\s+)?week|eow)\b/i,
     /\b(todo|to-do|action item|follow[- ]?up)\b/i,
     /\bschedule\s+(a|the|meeting|session|call)\b/i,
-    /\bsubmit\b/i,
+    /\b(submit|send|email|message|review|check|verify|confirm|update)\b/i,
   ];
 
   for (const sentence of sentences) {
-    if (sentence.length < 8 || sentence.length > 300) continue;
-    if (TASK_TRIGGERS.some(p => p.test(sentence))) {
-      let task = sentence.replace(/^[-•*]\s*/, '').replace(/[.!?]$/, '').trim();
+    if (TASK_TRIGGERS.some((p) => p.test(sentence))) {
+      let task = sentence.replace(/^[-•*]\s*/, '').trim();
       task = task.charAt(0).toUpperCase() + task.slice(1);
       if (task.length >= 10) add({ type: 'task', text: task });
     }
   }
 
-  // "X et al. YYYY" → paper search
+  // "Author et al. YYYY" → suggest PubMed search
   const etAl = /([A-Z][a-z]+(?:\s*(?:and|&|,)\s*[A-Z][a-z]+)?)\s+et\s+al\.?\s*[\(\[]?(\d{4})[\)\]]?/g;
   let m: RegExpExecArray | null;
   while ((m = etAl.exec(text)) !== null) {
     add({ type: 'paper', query: `${m[1]} ${m[2]}` });
   }
 
-  // "read / look up / find the X paper/study/review"
+  // "read / find the X paper/study/review"
   const paperPhrase = /(?:read|look\s+up|find|check\s+out|search\s+for)\s+(?:the\s+)?["']?([^"'.!?\n]{5,60}?)["']?\s+(?:paper|study|article|review)\b/gi;
   while ((m = paperPhrase.exec(text)) !== null) {
     add({ type: 'paper', query: m[1].trim() });
   }
 
-  return actions.slice(0, 4); // cap at 4 suggestions
+  return actions.slice(0, 4);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -78,66 +80,67 @@ function formatDuration(sec?: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-// ─── Note Action Popup ────────────────────────────────────────────────────────
+// ─── Inline action suggestions (shown right below the note input) ─────────────
 
-function NoteActionPopup({ actions, onAddTask, onSearchPaper, onDismiss }: {
+function NoteActionSuggestions({ actions, onAddTask, onSearchPaper, onDismiss }: {
   actions: NoteAction[];
   onAddTask: (text: string, index: number) => void;
   onSearchPaper: (query: string) => void;
   onDismiss: () => void;
 }) {
-  // Auto-dismiss after 12 seconds if untouched
+  // Auto-dismiss after 20 seconds
   useEffect(() => {
-    const t = setTimeout(onDismiss, 12000);
+    const t = setTimeout(onDismiss, 20000);
     return () => clearTimeout(t);
   }, [onDismiss]);
 
   if (actions.length === 0) return null;
 
   return (
-    <div className="fixed bottom-24 lg:bottom-8 left-4 right-16 lg:left-auto lg:right-80 lg:max-w-sm z-50 animate-slide-up">
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-brand-500" />
-            Suggested from your note
-          </p>
-          <button onClick={onDismiss} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="space-y-2">
-          {actions.map((action, i) => (
-            <div key={i} className="flex items-start gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-              {action.type === 'task' ? (
-                <>
-                  <CheckSquare className="w-4 h-4 text-learn-500 shrink-0 mt-0.5" />
-                  <p className="flex-1 text-xs text-slate-700 dark:text-slate-200 leading-snug min-w-0">{action.text}</p>
-                  <button
-                    onClick={() => onAddTask(action.text, i)}
-                    className="shrink-0 text-xs px-2.5 py-1 rounded-lg bg-learn-500 hover:bg-learn-600 text-white font-semibold transition-colors"
-                  >
-                    Add task
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mb-0.5">PubMed</p>
-                    <p className="text-xs text-slate-700 dark:text-slate-200 leading-snug font-medium truncate">{action.query}</p>
-                  </div>
-                  <button
-                    onClick={() => onSearchPaper(action.query)}
-                    className="shrink-0 text-xs px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold transition-colors"
-                  >
-                    Search
-                  </button>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+    <div className="bg-white dark:bg-slate-800 border-2 border-brand-200 dark:border-brand-700 rounded-2xl p-4 animate-slide-up">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+          Suggested from your note
+        </p>
+        <button
+          onClick={onDismiss}
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="space-y-2">
+        {actions.map((action, i) => (
+          <div key={i} className="flex items-start gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-700/60 rounded-xl">
+            {action.type === 'task' ? (
+              <>
+                <CheckSquare className="w-4 h-4 text-learn-500 shrink-0 mt-0.5" />
+                <p className="flex-1 text-xs text-slate-700 dark:text-slate-200 leading-snug min-w-0">{action.text}</p>
+                <button
+                  onClick={() => onAddTask(action.text, i)}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-learn-500 hover:bg-learn-600 text-white font-semibold transition-colors"
+                >
+                  Add task
+                </button>
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mb-0.5">PubMed search</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-200 leading-snug font-medium truncate">{action.query}</p>
+                </div>
+                <button
+                  onClick={() => onSearchPaper(action.query)}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold transition-colors"
+                >
+                  Search
+                </button>
+              </>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -156,9 +159,9 @@ export function NotebookPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState('');
   const [expandedSummary, setExpandedSummary] = useState(true);
-  // Per-entry bullet summaries
+  // Per-entry bullet summaries: { [obsId]: string[] | 'loading' | 'error' }
   const [entryBullets, setEntryBullets] = useState<Record<string, string[] | 'loading' | 'error'>>({});
-  // Smart action popup
+  // Smart action suggestions (shown inline below the input)
   const [pendingActions, setPendingActions] = useState<NoteAction[]>([]);
 
   const todayIso = new Date().toDateString();
@@ -166,7 +169,6 @@ export function NotebookPage() {
     (o) => new Date(o.createdAt).toDateString() === todayIso,
   ).length;
 
-  // Trigger action analysis after saving a note
   const triggerActionAnalysis = (text: string) => {
     const actions = analyzeNoteForActions(text);
     if (actions.length > 0) setPendingActions(actions);
@@ -205,7 +207,7 @@ export function NotebookPage() {
     setEditText('');
   };
 
-  // Per-entry AI bullet summary using the dedicated fast endpoint
+  // Per-entry AI bullet summary — uses the dedicated fast endpoint
   const runEntryBullets = async (obsId: string, text: string) => {
     if (Array.isArray(entryBullets[obsId])) {
       setEntryBullets((m) => { const n = { ...m }; delete n[obsId]; return n; });
@@ -238,7 +240,7 @@ export function NotebookPage() {
   // Popup action handlers
   const handleAddTask = (text: string, index: number) => {
     addTodo({ text, priority: 'normal' });
-    setPendingActions(prev => prev.filter((_, i) => i !== index));
+    setPendingActions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSearchPaper = (query: string) => {
@@ -248,16 +250,6 @@ export function NotebookPage() {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto animate-slide-up">
-
-      {/* Smart action popup */}
-      {pendingActions.length > 0 && (
-        <NoteActionPopup
-          actions={pendingActions}
-          onAddTask={handleAddTask}
-          onSearchPaper={handleSearchPaper}
-          onDismiss={() => setPendingActions([])}
-        />
-      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -313,6 +305,16 @@ export function NotebookPage() {
           </div>
         </form>
       </div>
+
+      {/* ── Inline action suggestions (appear right here after saving) ── */}
+      {pendingActions.length > 0 && (
+        <NoteActionSuggestions
+          actions={pendingActions}
+          onAddTask={handleAddTask}
+          onSearchPaper={handleSearchPaper}
+          onDismiss={() => setPendingActions([])}
+        />
+      )}
 
       {/* AI Summary */}
       {summary && (
@@ -407,16 +409,16 @@ export function NotebookPage() {
                           <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
                             {obs.text}
                           </p>
-                          {/* Inline bullet summary */}
+                          {/* Inline bullet summary — fixed dark mode */}
                           {Array.isArray(entryBullets[obs.id]) && (
-                            <div className="mt-2 p-2.5 bg-learn-50 dark:bg-learn-950/20 border border-learn-200 dark:border-learn-900/40 rounded-xl">
+                            <div className="mt-2 p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
                               <p className="text-[10px] font-semibold text-learn-600 dark:text-learn-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" /> AI summary
                               </p>
                               <ul className="space-y-1">
                                 {(entryBullets[obs.id] as string[]).map((b, i) => (
                                   <li key={i} className="text-xs text-slate-700 dark:text-slate-300 flex gap-1.5">
-                                    <span className="text-learn-500 mt-0.5 shrink-0">•</span>
+                                    <span className="text-learn-500 shrink-0 mt-0.5">•</span>
                                     {b}
                                   </li>
                                 ))}
@@ -447,7 +449,7 @@ export function NotebookPage() {
                             className={cn(
                               'p-1.5 rounded-lg transition-colors',
                               Array.isArray(entryBullets[obs.id])
-                                ? 'text-learn-600 bg-learn-50 dark:bg-learn-950/30'
+                                ? 'text-learn-600 bg-learn-50 dark:bg-slate-700'
                                 : 'text-slate-400 hover:text-learn-600 hover:bg-slate-100 dark:hover:bg-slate-800',
                             )}
                             title="Summarize as bullet points"
